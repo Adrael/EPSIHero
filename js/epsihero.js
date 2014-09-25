@@ -6,6 +6,9 @@ THREE.EPSIHero =
         // Application packaging
         var vm = this;
 
+        vm.cubes = [];
+        vm.clock = new THREE.Clock();
+
         vm.blend = blend;
         vm.fastAbs = fastAbs;
         vm.threshold = threshold;
@@ -19,9 +22,11 @@ THREE.EPSIHero =
         vm.createScene = createScene;
         vm.createLight = createLight;
         vm.createStats = createStats;
+        vm.createPlayer = createPlayer;
         vm.hasNotStream = hasNotStream;
         vm.getUserVideo = getUserVideo;
         vm.createCamera = createCamera;
+        vm.createCubeLine = createCubeLine;
         vm.createRenderer = createRenderer;
         vm.createTextures = createTextures;
         vm.createUserVideo = createUserVideo;
@@ -37,7 +42,21 @@ THREE.EPSIHero =
          */
         function render() {
 
+            var delta = vm.clock.getDelta();
+
+            for(var i in vm.cubes) {
+
+                for(var j = 0; j < vm.cubes[i].length; ++j) {
+
+                    var moveDistance = vm.cubes[i][j].position.y * -delta;
+                    vm.cubes[i][j].translateZ(moveDistance);
+
+                }
+
+            }
+
             vm.stats.update();
+            vm.controls.update();
 
             vm.renderer.render(vm.scene, vm.camera);
 
@@ -80,7 +99,10 @@ THREE.EPSIHero =
             vm.createCamera();
             vm.createRenderer();
             vm.createTextures();
+            vm.createPlayer();
             vm.createOrbitControls();
+
+            vm.createCubeLine();
 
             vm.render();
 
@@ -192,7 +214,7 @@ THREE.EPSIHero =
          */
         function createOrbitControls() {
 
-            vm.controls = new THREE.OrbitControls(vm.camera, vm.renderer.domElement);
+            vm.controls = new THREE.OrbitControls(vm.camera);
 
             return this;
 
@@ -218,6 +240,31 @@ THREE.EPSIHero =
         }
 
         /**
+         * Create the application's player.
+         * @name createPlayer
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function createPlayer() {
+
+            var cubeGeometry = new THREE.BoxGeometry(50, 50, 50);
+            vm.cubeMaterial = new THREE.MeshLambertMaterial(
+                {
+                    color: 0xffffff,
+                    map: vm.colorGray,
+                    emissive: 0x333333
+                }
+            );
+
+            vm.player = new THREE.Mesh(cubeGeometry, vm.cubeMaterial);
+            vm.player.position.set(0, -150, 0);
+            vm.scene.add(vm.player);
+
+            return this;
+
+        }
+
+        /**
          * Create the application's textures.
          * @name createTextures
          * @return {Object} this for chaining purposes
@@ -229,19 +276,7 @@ THREE.EPSIHero =
             vm.colorGreen = THREE.ImageUtils.loadTexture("assets/SquareGreen.png");
             vm.colorBlue = THREE.ImageUtils.loadTexture("assets/SquareBlue.png");
             vm.colorYellow = THREE.ImageUtils.loadTexture("assets/SquareYellow.png");
-
-            var cubeGeometry = new THREE.BoxGeometry(50, 50, 50);
-            vm.cubeMaterial = new THREE.MeshLambertMaterial(
-                {
-                    color: 0xffffff,
-                    map: colorRed,
-                    emissive: 0x333333
-                }
-            );
-
-            vm.cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-            vm.cube.position.set(0, 26, 0);
-            vm.scene.add(vm.cube);
+            vm.colorGray = THREE.ImageUtils.loadTexture("assets/SquareGray.png");
 
             return this;
 
@@ -271,6 +306,7 @@ THREE.EPSIHero =
 
             vm.buttons = [];
             var gap = vm.layer2Canvas.width / 5;
+            var y = 10;
 
             /* RED BUTTON */
             var button1 = new Image();
@@ -280,7 +316,7 @@ THREE.EPSIHero =
                 name: 'red',
                 image: button1,
                 x: 0 + gap,
-                y: 10,
+                y: y,
                 w: 32,
                 h: 32
             };
@@ -295,7 +331,7 @@ THREE.EPSIHero =
                 name: 'green',
                 image: button2,
                 x: 52 + gap,
-                y: 10,
+                y: y,
                 w: 32,
                 h: 32
             };
@@ -310,7 +346,7 @@ THREE.EPSIHero =
                 name: 'blue',
                 image: button3,
                 x: 104 + gap,
-                y: 10,
+                y: y,
                 w: 32,
                 h: 32
             };
@@ -325,7 +361,7 @@ THREE.EPSIHero =
                 name: 'yellow',
                 image: button4,
                 x: 156 + gap,
-                y: 10,
+                y: y,
                 w: 32,
                 h: 32
             };
@@ -565,6 +601,46 @@ THREE.EPSIHero =
                 }
 
             }
+
+        }
+
+        /**
+         * Create a cube line (barrier) with a door.
+         * @name createCubeLine
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function createCubeLine() {
+
+            var positionX = -100,
+                colors = [vm.colorBlue, vm.colorRed, vm.colorGreen, vm.colorYellow],
+                color = colors[Math.round(Math.random() * colors.length)],
+                numberOfCubesPerLine = 5,
+                cubes = [];
+
+            for(var i = 0; i < numberOfCubesPerLine; ++i) {
+
+                var cubeGeometry = new THREE.BoxGeometry(50, 50, 50);
+                var cubeMaterial = new THREE.MeshLambertMaterial(
+                    {
+                        color: 0xffffff,
+                        map: (i === Math.floor(numberOfCubesPerLine/2) ? color : vm.colorGray),
+                        emissive: 0x333333
+                    }
+                );
+
+                var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                cube.position.set(positionX, -150, -1000);
+                vm.scene.add(cube);
+                cubes.push(cube);
+
+                positionX += 50;
+
+            }
+
+            vm.cubes.push(cubes);
+
+            return this;
 
         }
 
