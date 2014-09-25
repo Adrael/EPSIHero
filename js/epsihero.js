@@ -60,20 +60,20 @@ THREE.EPSIHero =
 
             vm.renderer.render(vm.scene, vm.camera);
 
-            if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
-
-                vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
-
-                for (var i = 0; i < buttons.length; i++) {
-
-                    vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
-
-                }
-
-            }
-
-            vm.blend();
-            vm.checkAreas();
+//            if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
+//
+//                vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
+//
+//                for (var i = 0; i < buttons.length; i++) {
+//
+//                    vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
+//
+//                }
+//
+//            }
+//
+//            vm.blend();
+//            vm.checkAreas();
 
             requestAnimationFrame(vm.render);
 
@@ -89,8 +89,8 @@ THREE.EPSIHero =
          */
         function initialize() {
 
-            vm.createUserVideo();
-            vm.getUserVideo();
+            //vm.createUserVideo();
+            //vm.getUserVideo();
 
             vm.createScene();
             vm.createFog();
@@ -310,7 +310,7 @@ THREE.EPSIHero =
 
             /* RED BUTTON */
             var button1 = new Image();
-            button1.src = 'assets/SquareRed.png';
+            button1.src = 'assets/buttonRed.png';
             var buttonData1 =
             {
                 name: 'red',
@@ -325,7 +325,7 @@ THREE.EPSIHero =
 
             /* GREEN BUTTON */
             var button2 = new Image();
-            button2.src = 'assets/SquareGreen.png';
+            button2.src = 'assets/buttonGreen.png';
             var buttonData2 =
             {
                 name: 'green',
@@ -340,7 +340,7 @@ THREE.EPSIHero =
 
             /* BLUE BUTTON */
             var button3 = new Image();
-            button3.src = 'assets/SquareBlue.png';
+            button3.src = 'assets/buttonBlue.png';
             var buttonData3 =
             {
                 name: 'blue',
@@ -355,7 +355,7 @@ THREE.EPSIHero =
 
             /* YELLOW BUTTON */
             var button4 = new Image();
-            button4.src = 'assets/SquareYellow.png';
+            button4.src = 'assets/buttonYellow.png';
             var buttonData4 =
             {
                 name: 'yellow',
