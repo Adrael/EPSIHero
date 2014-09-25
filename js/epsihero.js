@@ -44,9 +44,9 @@ THREE.EPSIHero =
 
             var delta = vm.clock.getDelta();
 
-            for(var i in vm.cubes) {
+            for (var i in vm.cubes) {
 
-                for(var j = 0; j < vm.cubes[i].length; ++j) {
+                for (var j = 1; j < vm.cubes[i].length; ++j) {
 
                     var moveDistance = vm.cubes[i][j].position.y * -delta;
                     vm.cubes[i][j].translateZ(moveDistance);
@@ -60,20 +60,20 @@ THREE.EPSIHero =
 
             vm.renderer.render(vm.scene, vm.camera);
 
-//            if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
-//
-//                vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
-//
-//                for (var i = 0; i < buttons.length; i++) {
-//
-//                    vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
-//
-//                }
-//
-//            }
-//
-//            vm.blend();
-//            vm.checkAreas();
+            if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
+
+                vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
+
+                for (var i = 0; i < buttons.length; i++) {
+
+                    vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
+
+                }
+
+            }
+
+            vm.blend();
+            vm.checkAreas();
 
             requestAnimationFrame(vm.render);
 
@@ -89,8 +89,8 @@ THREE.EPSIHero =
          */
         function initialize() {
 
-            //vm.createUserVideo();
-            //vm.getUserVideo();
+            vm.createUserVideo();
+            vm.getUserVideo();
 
             vm.createScene();
             vm.createFog();
@@ -273,10 +273,19 @@ THREE.EPSIHero =
         function createTextures() {
 
             vm.colorRed = THREE.ImageUtils.loadTexture("assets/SquareRed.png");
+            vm.colorRed.name = 'red';
+
             vm.colorGreen = THREE.ImageUtils.loadTexture("assets/SquareGreen.png");
+            vm.colorGreen.name = 'green';
+
             vm.colorBlue = THREE.ImageUtils.loadTexture("assets/SquareBlue.png");
+            vm.colorBlue.name = 'blue';
+
             vm.colorYellow = THREE.ImageUtils.loadTexture("assets/SquareYellow.png");
+            vm.colorYellow.name = 'yellow';
+
             vm.colorGray = THREE.ImageUtils.loadTexture("assets/SquareGray.png");
+            vm.colorGray.name = 'gray';
 
             return this;
 
@@ -583,18 +592,22 @@ THREE.EPSIHero =
                     if (buttons[b].name == "red") {
 
                         vm.cubeMaterial.map = vm.colorRed;
+                        vm.actualColor = 'red';
 
                     } else if (buttons[b].name == "green") {
 
                         vm.cubeMaterial.map = vm.colorGreen;
+                        vm.actualColor = 'green';
 
                     } else if (buttons[b].name == "blue") {
 
                         vm.cubeMaterial.map = vm.colorBlue;
+                        vm.actualColor = 'blue';
 
                     } else if (buttons[b].name == "yellow") {
 
                         vm.cubeMaterial.map = vm.colorYellow;
+                        vm.actualColor = 'yellow';
 
                     }
 
@@ -616,15 +629,15 @@ THREE.EPSIHero =
                 colors = [vm.colorBlue, vm.colorRed, vm.colorGreen, vm.colorYellow],
                 color = colors[Math.round(Math.random() * colors.length)],
                 numberOfCubesPerLine = 5,
-                cubes = [];
+                cubes = [{index: vm.cubes.length, color: color.name}];
 
-            for(var i = 0; i < numberOfCubesPerLine; ++i) {
+            for (var i = 0; i < numberOfCubesPerLine; ++i) {
 
                 var cubeGeometry = new THREE.BoxGeometry(50, 50, 50);
                 var cubeMaterial = new THREE.MeshLambertMaterial(
                     {
                         color: 0xffffff,
-                        map: (i === Math.floor(numberOfCubesPerLine/2) ? color : vm.colorGray),
+                        map: (i === Math.floor(numberOfCubesPerLine / 2) ? color : vm.colorGray),
                         emissive: 0x333333
                     }
                 );
