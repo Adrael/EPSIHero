@@ -10,17 +10,16 @@
 
 <video id="monitor" autoplay></video>
 
-<canvas id="videoCanvas" width="320" height="240"
-        style="z-index: 1; position: absolute; left:0px; top:0px; opacity:0.5;"></canvas>
+<canvas id="videoCanvas" width="320" height="240"></canvas>
+<canvas id="layer2" width="320" height="240"></canvas>
+<canvas id="blendCanvas"></canvas>
 
-<canvas id="layer2" width="320" height="240"
-        style="z-index: 2; position: absolute; left:0px; top:0px; opacity:1;"></canvas>
-
-<canvas id="blendCanvas"
-        style="display: none; position: relative; left: 320px; top: 240px; width: 320px; height: 240px;"></canvas>
+<div id="lifes"></div>
+<div id="points"></div>
+<div id="end"></div>
 
 <!-- External libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.js"></script>
 <script src="libs/threejs/detect.js"></script>
 <script src="libs/threejs/orbitcontrols.js"></script>
 <script src="libs/threejs/stats.min.js"></script>

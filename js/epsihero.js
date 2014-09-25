@@ -7,6 +7,11 @@ THREE.EPSIHero =
         var vm = this;
 
         vm.cubes = [];
+        vm.lifes = 4;
+        vm.points = 0;
+        vm.endContainer = document.getElementById('end');
+        vm.lifesContainer = document.getElementById('lifes');
+        vm.pointsContainer = document.getElementById('points');
         vm.clock = new THREE.Clock();
 
         vm.blend = blend;
@@ -42,40 +47,101 @@ THREE.EPSIHero =
          */
         function render() {
 
-            var delta = vm.clock.getDelta();
+            if (vm.lifes > 0) {
 
-            for (var i in vm.cubes) {
+                var delta = vm.clock.getDelta();
 
-                for (var j = 1; j < vm.cubes[i].length; ++j) {
+                if (vm.gameStart && vm.cubes.length > 0) {
 
-                    var moveDistance = vm.cubes[i][j].position.y * -delta;
-                    vm.cubes[i][j].translateZ(moveDistance);
+                    for (var i in vm.cubes) {
+
+                        for (var j = 1; j < vm.cubes[i].length; ++j) {
+
+                            var divide = vm.points / 20;
+                            var threshold = (divide > 1 ? divide : 1);
+                            var speed = (vm.points > 0 ? threshold : 1);
+                            var moveDistance = vm.cubes[i][j].position.y * -delta * speed;
+                            vm.cubes[i][j].translateZ(moveDistance);
+
+                        }
+
+                    }
+
+                    var originPoint = vm.player.position.clone();
+                    for (var vertexIndex = 0; vertexIndex < vm.player.geometry.vertices.length; ++vertexIndex) {
+
+                        var localVertex = vm.player.geometry.vertices[vertexIndex].clone();
+                        var globalVertex = localVertex.applyMatrix4(vm.player.matrix);
+                        var directionVector = globalVertex.sub(vm.player.position);
+
+                        var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
+                        var cubes = vm.cubes[0].slice(1, vm.cubes[0].length);
+
+                        var collisionResults = ray.intersectObjects(cubes);
+                        if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+
+                            if (vm.cubes[0][0].color === vm.actualColor) {
+                                vm.points += 10;
+                            } else {
+
+                                if (vm.points > 0) {
+                                    vm.points -= 5;
+                                }
+
+                                --vm.lifes;
+                            }
+
+                            for (var i in cubes) {
+                                vm.scene.remove(cubes[i]);
+                            }
+
+                            vm.cubes = vm.cubes.slice(1, vm.cubes.length);
+                            vm.createCubeLine();
+                            break;
+
+                        }
+
+                    }
+                }
+
+                while (vm.lifesContainer.firstChild) {
+                    vm.lifesContainer.removeChild(vm.lifesContainer.firstChild);
+                }
+
+                for (var i = 0; i < vm.lifes; ++i) {
+                    var heart = new Image();
+                    heart.src = 'assets/heart_' + vm.lifes + '.png';
+                    vm.lifesContainer.appendChild(heart);
+                }
+
+                vm.pointsContainer.innerHTML = 'Points: ' + vm.points;
+
+                vm.stats.update();
+                vm.controls.update();
+
+                vm.renderer.render(vm.scene, vm.camera);
+
+                if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
+
+                    vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
+
+                    for (var i = 0; i < buttons.length; i++) {
+
+                        vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
+
+                    }
 
                 }
 
-            }
+                vm.blend();
+                vm.checkAreas();
 
-            vm.stats.update();
-            vm.controls.update();
+                requestAnimationFrame(vm.render);
+            } else {
 
-            vm.renderer.render(vm.scene, vm.camera);
-
-            if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
-
-                vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
-
-                for (var i = 0; i < buttons.length; i++) {
-
-                    vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
-
-                }
+                vm.endContainer.innerHTML = 'GAME OVER!';
 
             }
-
-            vm.blend();
-            vm.checkAreas();
-
-            requestAnimationFrame(vm.render);
 
             return this;
 
@@ -314,7 +380,6 @@ THREE.EPSIHero =
             vm.videoContext.fillRect(0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
 
             vm.buttons = [];
-            var gap = vm.layer2Canvas.width / 5;
             var y = 10;
 
             /* RED BUTTON */
@@ -324,7 +389,7 @@ THREE.EPSIHero =
             {
                 name: 'red',
                 image: button1,
-                x: 0 + gap,
+                x: 27,
                 y: y,
                 w: 32,
                 h: 32
@@ -339,7 +404,7 @@ THREE.EPSIHero =
             {
                 name: 'green',
                 image: button2,
-                x: 52 + gap,
+                x: 105,
                 y: y,
                 w: 32,
                 h: 32
@@ -354,7 +419,7 @@ THREE.EPSIHero =
             {
                 name: 'blue',
                 image: button3,
-                x: 104 + gap,
+                x: 183,
                 y: y,
                 w: 32,
                 h: 32
@@ -369,7 +434,7 @@ THREE.EPSIHero =
             {
                 name: 'yellow',
                 image: button4,
-                x: 156 + gap,
+                x: 261,
                 y: y,
                 w: 32,
                 h: 32
@@ -428,6 +493,8 @@ THREE.EPSIHero =
                 vm.camvideo.src = stream;
 
             }
+
+            vm.gameStart = true;
 
             vm.camvideo.onerror = function (e) {
 
@@ -587,7 +654,7 @@ THREE.EPSIHero =
                 // more than 20% movement detected
                 if (average > 50) {
 
-                    console.log("Button " + buttons[b].name + " triggered.");
+//                    console.log("Button " + buttons[b].name + " triggered.");
 
                     if (buttons[b].name == "red") {
 
@@ -625,11 +692,21 @@ THREE.EPSIHero =
          */
         function createCubeLine() {
 
+            function getColor() {
+                var c = colors[Math.round(Math.random() * colors.length)];
+                while (!c) {
+                    c = colors[Math.round(Math.random() * colors.length)];
+                }
+                return c;
+            }
+
             var positionX = -100,
                 colors = [vm.colorBlue, vm.colorRed, vm.colorGreen, vm.colorYellow],
-                color = colors[Math.round(Math.random() * colors.length)],
+                color = getColor(),
                 numberOfCubesPerLine = 5,
-                cubes = [{index: vm.cubes.length, color: color.name}];
+                cubes = [
+                    {color: color.name}
+                ];
 
             for (var i = 0; i < numberOfCubesPerLine; ++i) {
 
@@ -637,7 +714,7 @@ THREE.EPSIHero =
                 var cubeMaterial = new THREE.MeshLambertMaterial(
                     {
                         color: 0xffffff,
-                        map: (i === Math.floor(numberOfCubesPerLine / 2) ? color : vm.colorGray),
+                        map: (i === Math.floor(numberOfCubesPerLine / 2) ? color : getColor()),
                         emissive: 0x333333
                     }
                 );

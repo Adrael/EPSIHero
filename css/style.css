@@ -19,3 +19,62 @@ canvas {
     height: 100%;
     display: none;
 }
+
+#end {
+    z-index: 9999;
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    margin-left: -300px;
+    left: 50%;
+    top: 50%;
+    font-size: 5em;
+    font-weight: bold;
+    color: darkred;
+}
+
+#points {
+    z-index: 999;
+    position: absolute;
+    bottom: 0;
+    right: 10px;
+    font-size: 3em;
+    color: white;
+}
+
+#lifes {
+    z-index: 999;
+    position: absolute;
+    bottom: 50px;
+    right: 10px;
+}
+
+#lifes img {
+    width: 32px;
+    height: 32px;
+}
+
+#videoCanvas {
+    z-index: 1;
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0.5;
+}
+
+#layer2 {
+    z-index: 2;
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 1;
+}
+
+#blendCanvas {
+    display: none;
+    position: relative;
+    left: 320px;
+    top: 240px;
+    width: 320px;
+    height: 240px;
+}
