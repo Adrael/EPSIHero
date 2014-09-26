@@ -9,10 +9,17 @@ THREE.EPSIHero =
         vm.cubes = [];
         vm.lifes = 4;
         vm.points = 0;
+        vm.currentThresholdPoints = 0;
+
         vm.endContainer = document.getElementById('end');
         vm.lifesContainer = document.getElementById('lifes');
         vm.pointsContainer = document.getElementById('points');
         vm.clock = new THREE.Clock();
+
+        vm.backgroundSound = new Audio('assets/song.mp3');
+        vm.breakSound = 'assets/break.wav';
+        vm.successSound = 'assets/coin.wav';
+        vm.gameOverSound = 'assets/gameover.wav';
 
         vm.blend = blend;
         vm.fastAbs = fastAbs;
@@ -20,6 +27,7 @@ THREE.EPSIHero =
         vm.checkAreas = checkAreas;
         vm.differenceAccuracy = differenceAccuracy;
 
+        vm.play = play;
         vm.render = render;
         vm.hasStream = hasStream;
         vm.createFog = createFog;
@@ -81,14 +89,25 @@ THREE.EPSIHero =
                         if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
 
                             if (vm.cubes[0][0].color === vm.actualColor) {
+
+                                vm.play(vm.successSound);
                                 vm.points += 10;
+
+                                if(vm.points - vm.currentThresholdPoints > 100) {
+                                    vm.currentThresholdPoints = vm.points;
+                                    ++vm.lifes;
+                                }
+
                             } else {
+
+                                vm.play(vm.breakSound);
 
                                 if (vm.points > 0) {
                                     vm.points -= 5;
                                 }
 
                                 --vm.lifes;
+
                             }
 
                             for (var i in cubes) {
@@ -110,7 +129,7 @@ THREE.EPSIHero =
 
                 for (var i = 0; i < vm.lifes; ++i) {
                     var heart = new Image();
-                    heart.src = 'assets/heart_' + vm.lifes + '.png';
+                    heart.src = 'assets/heart_' + (vm.lifes > 4 ? 4 : vm.lifes) + '.png';
                     vm.lifesContainer.appendChild(heart);
                 }
 
@@ -139,6 +158,8 @@ THREE.EPSIHero =
                 requestAnimationFrame(vm.render);
             } else {
 
+                vm.backgroundSound.pause();
+                vm.play(vm.gameOverSound);
                 vm.endContainer.innerHTML = 'GAME OVER!';
 
             }
@@ -154,6 +175,8 @@ THREE.EPSIHero =
          * @function
          */
         function initialize() {
+
+            vm.backgroundSound.play();
 
             vm.createUserVideo();
             vm.getUserVideo();
@@ -729,6 +752,32 @@ THREE.EPSIHero =
             }
 
             vm.cubes.push(cubes);
+
+            return this;
+
+        }
+
+        /**
+         * Play the given sound.
+         * @name play
+         * @param {String} sound The sound to be played
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function play(sound) {
+
+            console.log('Trying to play:', sound);
+
+            var audio = new Audio();
+
+            audio.addEventListener('loadeddata',
+                function () {
+                    console.log('Loaded and playing:', sound);
+                    audio.play();
+                }
+                , false);
+
+            audio.src = sound;
 
             return this;
 
