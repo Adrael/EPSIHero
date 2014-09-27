@@ -13,62 +13,71 @@ THREE.EPSIHero =
         vm.pause = false;
         vm.playerPosition = 2;
         vm.scoreThreshold = 1;
+        vm.giveLifeThreshold = 10;
+        vm.speedLineCoefficient = 1;
         vm.isWebcamReversed = false;
         vm.isWebcamInverted = false;
         vm.clock = new THREE.Clock();
-        vm.giveLifeThreshold = 10;
         vm.invertWebcamThreshold = 15;
         vm.currentThresholdPoints = 0;
-        vm.reverseWebcamThreshold = 30;
-
-        vm.endContainer = document.getElementById('end');
-        vm.lifesContainer = document.getElementById('lifes');
-        vm.pauseContainer = document.getElementById('pause');
-        vm.pointsContainer = document.getElementById('points');
-
+        vm.reverseWebcamThreshold = 50;
+        vm.oneUpSound = 'assets/1-up.wav';
         vm.breakSound = 'assets/break.wav';
         vm.successSound = 'assets/coin.wav';
+        vm.changeColorPositionThreshold = 30;
+        vm.changeColorPositionAllowed = false;
         vm.changeBlockSound = 'assets/bump.wav';
         vm.gameOverSound = 'assets/gameover.wav';
         vm.switchColorsSound = 'assets/vine.wav';
         vm.revertImageSound = 'assets/powerup.wav';
-        vm.oneUpSound = 'assets/1-up.wav';
+        vm.endContainer = document.getElementById('end');
         vm.backgroundSound = new Audio('assets/song.mp3');
-
-        vm.blend = blend;
-        vm.fastAbs = fastAbs;
-        vm.threshold = threshold;
-        vm.checkAreas = checkAreas;
-        vm.differenceAccuracy = differenceAccuracy;
-
-        vm.onKeyPress = onKeyPress;
-        vm.createLines = createLines;
-        vm.moveCubeLine = moveCubeLine;
-        vm.reverseWebcam = reverseWebcam;
-        vm.movePlayerLeft = movePlayerLeft;
-        vm.movePlayerRight = movePlayerRight;
-        vm.displayControls = displayControls;
-        vm.processCollisions = processCollisions;
-        vm.invertWebcamColors = invertWebcamColors;
-        vm.displayLifesAndPoints = displayLifesAndPoints;
+        vm.lifesContainer = document.getElementById('lifes');
+        vm.pauseContainer = document.getElementById('pause');
+        vm.pointsContainer = document.getElementById('points');
 
         vm.play = play;
+        vm.blend = blend;
         vm.render = render;
+        vm.fastAbs = fastAbs;
+        vm.restart = restart;
+        vm.threshold = threshold;
         vm.hasStream = hasStream;
         vm.createFog = createFog;
+        vm.checkAreas = checkAreas;
         vm.initialize = initialize;
+        vm.onKeyPress = onKeyPress;
         vm.createScene = createScene;
         vm.createLight = createLight;
+        vm.createLines = createLines;
         vm.createStats = createStats;
+        vm.shuffleArray = shuffleArray;
         vm.createPlayer = createPlayer;
         vm.hasNotStream = hasNotStream;
+        vm.moveCubeLine = moveCubeLine;
         vm.getUserVideo = getUserVideo;
+        vm.onKeyRelease = onKeyRelease;
         vm.createCamera = createCamera;
+        vm.setPlayerRed = setPlayerRed;
+        vm.clearCubeLine = clearCubeLine;
+        vm.createButtons = createButtons;
+        vm.setPlayerBlue = setPlayerBlue;
+        vm.reverseWebcam = reverseWebcam;
+        vm.setPlayerGreen = setPlayerGreen;
+        vm.movePlayerLeft = movePlayerLeft;
         vm.createCubeLine = createCubeLine;
         vm.createRenderer = createRenderer;
         vm.createTextures = createTextures;
+        vm.movePlayerRight = movePlayerRight;
+        vm.setPlayerYellow = setPlayerYellow;
+        vm.displayControls = displayControls;
         vm.createUserVideo = createUserVideo;
+        vm.createBackground = createBackground;
+        vm.processCollisions = processCollisions;
+        vm.invertWebcamColors = invertWebcamColors;
+        vm.differenceAccuracy = differenceAccuracy;
         vm.createOrbitControls = createOrbitControls;
+        vm.displayLifesAndPoints = displayLifesAndPoints;
 
         return vm;
 
@@ -103,7 +112,9 @@ THREE.EPSIHero =
                 } else {
 
                     vm.end = true;
-                    vm.backgroundSound.pause();
+                    if (vm.backgroundSound) {
+                        vm.backgroundSound.pause();
+                    }
                     vm.play(vm.gameOverSound);
                     vm.endContainer.innerHTML = 'Game Over!';
 
@@ -138,12 +149,35 @@ THREE.EPSIHero =
             vm.createRenderer();
             vm.createTextures();
             vm.createPlayer();
+            vm.createButtons();
             vm.createLines();
             vm.createOrbitControls();
 
             vm.createCubeLine();
 
             vm.render();
+
+            return this;
+
+        }
+
+        /**
+         * Add a background if no webcam can be use.
+         * @name createBackground
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function createBackground() {
+
+            var img = new THREE.MeshBasicMaterial(
+                {
+                    map: THREE.ImageUtils.loadTexture('assets/background.jpg')
+                }
+            );
+
+            var plane = new THREE.Mesh(new THREE.PlaneGeometry(5760, 3240), img);
+            plane.position.z = -1000;
+            vm.scene.add(plane);
 
             return this;
 
@@ -158,7 +192,6 @@ THREE.EPSIHero =
         function displayControls() {
 
             if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
-
 
                 vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
 
@@ -176,11 +209,18 @@ THREE.EPSIHero =
 
                 }
 
-                for (var i = 0; i < buttons.length; i++) {
+                if (vm.changeColorPositionAllowed) {
 
-                    vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
+                    vm.createButtons();
+                    vm.changeColorPositionAllowed = false;
 
                 }
+
+            }
+
+            for (var i = 0; i < buttons.length; i++) {
+
+                vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
 
             }
 
@@ -273,9 +313,8 @@ THREE.EPSIHero =
                 var directionVector = globalVertex.sub(vm.player.position);
 
                 var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
-                var cubes = vm.cubes[0];
 
-                var collisionResults = ray.intersectObjects(cubes);
+                var collisionResults = ray.intersectObjects(vm.cubes[0]);
                 if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
 
                     if (vm.cubes[0][vm.playerPosition].colorName === vm.actualColor) {
@@ -296,11 +335,7 @@ THREE.EPSIHero =
 
                     }
 
-                    for (var i in cubes) {
-                        vm.scene.remove(cubes[i]);
-                    }
-
-                    vm.cubes = vm.cubes.slice(1, vm.cubes.length);
+                    vm.clearCubeLine();
                     vm.createCubeLine();
 
                     if (Math.floor(Math.random() * 100) > 50) {
@@ -309,11 +344,33 @@ THREE.EPSIHero =
                         vm.movePlayerRight();
                     }
 
+                    if (vm.points >= vm.changeColorPositionThreshold) {
+                        vm.changeColorPositionAllowed = true;
+                    }
+
                     break;
 
                 }
 
             }
+
+            return this;
+
+        }
+
+        /**
+         * Clear cube line.
+         * @name clearCubeLine
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function clearCubeLine() {
+
+            for (var i in vm.cubes[0]) {
+                vm.scene.remove(vm.cubes[0][i]);
+            }
+
+            vm.cubes = vm.cubes.slice(1, vm.cubes.length);
 
             return this;
 
@@ -335,7 +392,7 @@ THREE.EPSIHero =
 
                     var divide = vm.points / 5;
                     var threshold = (divide > 1 ? divide : 1);
-                    var speed = (vm.points > 0 ? threshold : 1);
+                    var speed = (vm.points > 0 ? threshold : 1) * vm.speedLineCoefficient;
                     var moveDistance = vm.cubes[i][j].position.y * -delta * speed;
                     vm.cubes[i][j].translateZ(moveDistance);
 
@@ -545,73 +602,10 @@ THREE.EPSIHero =
             vm.blendCanvas = document.getElementById('blendCanvas');
             vm.blendContext = blendCanvas.getContext('2d');
 
-            vm.videoContext.translate(320, 0);
+            vm.videoContext.translate(vm.videoCanvas.width, 0);
             vm.videoContext.scale(-1, 1);
-            vm.videoContext.fillStyle = 'white';
+            vm.videoContext.fillStyle = 'rgba(255, 255, 255, 0)';
             vm.videoContext.fillRect(0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
-
-            vm.buttons = [];
-            var y = 10;
-
-            /* RED BUTTON */
-            var button1 = new Image();
-            button1.src = 'assets/buttonRed.png';
-            var buttonData1 =
-            {
-                name: 'red',
-                image: button1,
-                x: 27,
-                y: y,
-                w: 32,
-                h: 32
-            };
-
-            vm.buttons.push(buttonData1);
-
-            /* GREEN BUTTON */
-            var button2 = new Image();
-            button2.src = 'assets/buttonGreen.png';
-            var buttonData2 =
-            {
-                name: 'green',
-                image: button2,
-                x: 105,
-                y: y,
-                w: 32,
-                h: 32
-            };
-
-            vm.buttons.push(buttonData2);
-
-            /* BLUE BUTTON */
-            var button3 = new Image();
-            button3.src = 'assets/buttonBlue.png';
-            var buttonData3 =
-            {
-                name: 'blue',
-                image: button3,
-                x: 183,
-                y: y,
-                w: 32,
-                h: 32
-            };
-
-            vm.buttons.push(buttonData3);
-
-            /* YELLOW BUTTON */
-            var button4 = new Image();
-            button4.src = 'assets/buttonYellow.png';
-            var buttonData4 =
-            {
-                name: 'yellow',
-                image: button4,
-                x: 261,
-                y: y,
-                w: 32,
-                h: 32
-            };
-
-            vm.buttons.push(buttonData4);
 
             return this;
 
@@ -697,6 +691,9 @@ THREE.EPSIHero =
             }
 
             console.error(msg);
+
+            vm.gameStart = true;
+            vm.createBackground();
 
             return this;
 
@@ -831,29 +828,78 @@ THREE.EPSIHero =
 
                     if (buttons[b].name == "red") {
 
-                        vm.cubeMaterial.map = vm.colorRed;
-                        vm.actualColor = 'red';
+                        vm.setPlayerRed();
 
                     } else if (buttons[b].name == "green") {
 
-                        vm.cubeMaterial.map = vm.colorGreen;
-                        vm.actualColor = 'green';
+                        vm.setPlayerGreen();
 
                     } else if (buttons[b].name == "blue") {
 
-                        vm.cubeMaterial.map = vm.colorBlue;
-                        vm.actualColor = 'blue';
+                        vm.setPlayerBlue();
 
                     } else if (buttons[b].name == "yellow") {
 
-                        vm.cubeMaterial.map = vm.colorYellow;
-                        vm.actualColor = 'yellow';
+                        vm.setPlayerYellow();
 
                     }
 
                 }
 
             }
+
+        }
+
+        /**
+         * Change the player's color to red.
+         * @name setPlayerRed
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function setPlayerRed() {
+
+            vm.cubeMaterial.map = vm.colorRed;
+            vm.actualColor = 'red';
+
+        }
+
+        /**
+         * Change the player's color to green.
+         * @name setPlayerGreen
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function setPlayerGreen() {
+
+            vm.cubeMaterial.map = vm.colorGreen;
+            vm.actualColor = 'green';
+
+        }
+
+        /**
+         * Change the player's color to blue.
+         * @name setPlayerBlue
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function setPlayerBlue() {
+
+            vm.cubeMaterial.map = vm.colorBlue;
+            vm.actualColor = 'blue';
+
+        }
+
+        /**
+         * Change the player's color to yellow.
+         * @name setPlayerYellow
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function setPlayerYellow() {
+
+
+            vm.cubeMaterial.map = vm.colorYellow;
+            vm.actualColor = 'yellow';
 
         }
 
@@ -980,8 +1026,9 @@ THREE.EPSIHero =
 
 //            console.log(event.keyCode);
 
-            if (!vm.end) {
+            if (!vm.end || event.keyCode === 82) {
                 switch (event.keyCode) {
+                    // Space - Pause
                     case 32:
                         event.preventDefault();
                         vm.pause = !vm.pause;
@@ -995,6 +1042,72 @@ THREE.EPSIHero =
                             vm.backgroundSound.play();
                             vm.pauseContainer.innerHTML = '';
                         }
+
+                        break;
+
+                    // R - Restart
+                    case 82:
+                        event.preventDefault();
+                        vm.restart();
+
+                        break;
+
+                    // Right Ctrl - Accelerate current line
+                    // Left Ctrl - Accelerate current line
+                    case 17:
+                        event.preventDefault();
+                        vm.speedLineCoefficient = 5;
+
+                        break;
+
+                    // Q - Red
+                    case 81:
+                        event.preventDefault();
+                        vm.setPlayerRed();
+                        break;
+
+                    // S - Green
+                    case 83:
+                        event.preventDefault();
+                        vm.setPlayerGreen();
+                        break;
+
+                    // L - Blue
+                    case 76:
+                        event.preventDefault();
+                        vm.setPlayerBlue();
+                        break;
+
+                    // M - Yellow
+                    case 77:
+                        event.preventDefault();
+                        vm.setPlayerYellow();
+                        break;
+                }
+            }
+
+            return this;
+
+        }
+
+        /**
+         * Key handler.
+         * @name onKeyRelease
+         * @param {Event} event The associated event
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function onKeyRelease(event) {
+
+//            console.log(event.keyCode);
+
+            if (!vm.end) {
+                switch (event.keyCode) {
+                    // Right Ctrl - Accelerate current line
+                    // Left Ctrl - Accelerate current line
+                    case 17:
+                        event.preventDefault();
+                        vm.speedLineCoefficient = 1;
 
                         break;
                 }
@@ -1033,6 +1146,144 @@ THREE.EPSIHero =
                 positionX += 50;
 
             }
+
+            return this;
+
+        }
+
+        /**
+         * Create game buttons.
+         * @name createButtons
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function createButtons() {
+
+            vm.buttons = [];
+            var positionY = 10,
+                positionsX = vm.shuffleArray([27, 105, 183, 261]);
+
+            /* RED BUTTON */
+            var button1 = new Image();
+            button1.src = 'assets/buttonRed.png';
+            var buttonData1 =
+            {
+                name: 'red',
+                image: button1,
+                x: positionsX[0],
+                y: positionY,
+                w: 32,
+                h: 32
+            };
+
+            vm.buttons.push(buttonData1);
+
+            /* GREEN BUTTON */
+            var button2 = new Image();
+            button2.src = 'assets/buttonGreen.png';
+            var buttonData2 =
+            {
+                name: 'green',
+                image: button2,
+                x: positionsX[1],
+                y: positionY,
+                w: 32,
+                h: 32
+            };
+
+            vm.buttons.push(buttonData2);
+
+            /* BLUE BUTTON */
+            var button3 = new Image();
+            button3.src = 'assets/buttonBlue.png';
+            var buttonData3 =
+            {
+                name: 'blue',
+                image: button3,
+                x: positionsX[2],
+                y: positionY,
+                w: 32,
+                h: 32
+            };
+
+            vm.buttons.push(buttonData3);
+
+            /* YELLOW BUTTON */
+            var button4 = new Image();
+            button4.src = 'assets/buttonYellow.png';
+            var buttonData4 =
+            {
+                name: 'yellow',
+                image: button4,
+                x: positionsX[3],
+                y: positionY,
+                w: 32,
+                h: 32
+            };
+
+            vm.buttons.push(buttonData4);
+
+            return this;
+
+        }
+
+        /**
+         * Shuffle given array.
+         * @name shuffleArray
+         * @param {Array} array The array to shuffle
+         * @return {Array} the shuffled array
+         * @function
+         */
+        function shuffleArray(array) {
+
+            var currentIndex = array.length,
+                temporaryValue,
+                randomIndex;
+
+            while (0 !== currentIndex) {
+
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex -= 1;
+
+                temporaryValue = array[currentIndex];
+                array[currentIndex] = array[randomIndex];
+                array[randomIndex] = temporaryValue;
+
+            }
+
+            return array;
+
+        }
+
+        /**
+         * Restart the game.
+         * @name restart
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function restart() {
+
+            vm.lifes = 5;
+            vm.points = 0;
+            vm.end = false;
+            vm.pause = false;
+            vm.playerPosition = 2;
+            vm.speedLineCoefficient = 1;
+            vm.isWebcamReversed = false;
+            vm.isWebcamInverted = false;
+            vm.clock = new THREE.Clock();
+            vm.currentThresholdPoints = 0;
+            vm.changeColorPositionAllowed = false;
+            vm.endContainer.innerHTML = '';
+
+            if (vm.backgroundSound) {
+                vm.backgroundSound.pause();
+                vm.backgroundSound = null;
+                vm.backgroundSound = new Audio('assets/song.mp3').play();
+            }
+
+            vm.clearCubeLine();
+            vm.createCubeLine();
 
             return this;
 
