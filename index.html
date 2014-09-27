@@ -16,6 +16,7 @@
 
 <div id="lifes"></div>
 <div id="points"></div>
+<div id="pause"></div>
 <div id="end"></div>
 
 <!-- External libraries -->
@@ -30,6 +31,7 @@
 <!-- Start the game -->
 <script type="text/javascript">
     window.onload = THREE.EPSIHero.initialize;
+    window.onkeydown = THREE.EPSIHero.onKeyPress;
 </script>
 
 </body>

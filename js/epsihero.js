@@ -6,26 +6,51 @@ THREE.EPSIHero =
         // Application packaging
         var vm = this;
 
+        vm.lifes = 5;
         vm.cubes = [];
-        vm.lifes = 4;
         vm.points = 0;
+        vm.end = false;
+        vm.pause = false;
+        vm.playerPosition = 2;
+        vm.scoreThreshold = 1;
+        vm.isWebcamReversed = false;
+        vm.isWebcamInverted = false;
+        vm.clock = new THREE.Clock();
+        vm.giveLifeThreshold = 10;
+        vm.invertWebcamThreshold = 15;
         vm.currentThresholdPoints = 0;
+        vm.reverseWebcamThreshold = 30;
 
         vm.endContainer = document.getElementById('end');
         vm.lifesContainer = document.getElementById('lifes');
+        vm.pauseContainer = document.getElementById('pause');
         vm.pointsContainer = document.getElementById('points');
-        vm.clock = new THREE.Clock();
 
-        vm.backgroundSound = new Audio('assets/song.mp3');
         vm.breakSound = 'assets/break.wav';
         vm.successSound = 'assets/coin.wav';
+        vm.changeBlockSound = 'assets/bump.wav';
         vm.gameOverSound = 'assets/gameover.wav';
+        vm.switchColorsSound = 'assets/vine.wav';
+        vm.revertImageSound = 'assets/powerup.wav';
+        vm.oneUpSound = 'assets/1-up.wav';
+        vm.backgroundSound = new Audio('assets/song.mp3');
 
         vm.blend = blend;
         vm.fastAbs = fastAbs;
         vm.threshold = threshold;
         vm.checkAreas = checkAreas;
         vm.differenceAccuracy = differenceAccuracy;
+
+        vm.onKeyPress = onKeyPress;
+        vm.createLines = createLines;
+        vm.moveCubeLine = moveCubeLine;
+        vm.reverseWebcam = reverseWebcam;
+        vm.movePlayerLeft = movePlayerLeft;
+        vm.movePlayerRight = movePlayerRight;
+        vm.displayControls = displayControls;
+        vm.processCollisions = processCollisions;
+        vm.invertWebcamColors = invertWebcamColors;
+        vm.displayLifesAndPoints = displayLifesAndPoints;
 
         vm.play = play;
         vm.render = render;
@@ -55,114 +80,38 @@ THREE.EPSIHero =
          */
         function render() {
 
-            if (vm.lifes > 0) {
+            vm.stats.update();
+            vm.controls.update();
 
-                var delta = vm.clock.getDelta();
+            if (!vm.pause && !vm.end) {
 
-                if (vm.gameStart && vm.cubes.length > 0) {
+                if (vm.lifes > 0) {
 
-                    for (var i in vm.cubes) {
-
-                        for (var j = 1; j < vm.cubes[i].length; ++j) {
-
-                            var divide = vm.points / 20;
-                            var threshold = (divide > 1 ? divide : 1);
-                            var speed = (vm.points > 0 ? threshold : 1);
-                            var moveDistance = vm.cubes[i][j].position.y * -delta * speed;
-                            vm.cubes[i][j].translateZ(moveDistance);
-
-                        }
-
+                    if (vm.gameStart && vm.cubes.length > 0) {
+                        vm.moveCubeLine();
+                        vm.processCollisions();
                     }
 
-                    var originPoint = vm.player.position.clone();
-                    for (var vertexIndex = 0; vertexIndex < vm.player.geometry.vertices.length; ++vertexIndex) {
+                    vm.displayControls();
+                    vm.displayLifesAndPoints();
 
-                        var localVertex = vm.player.geometry.vertices[vertexIndex].clone();
-                        var globalVertex = localVertex.applyMatrix4(vm.player.matrix);
-                        var directionVector = globalVertex.sub(vm.player.position);
+                    vm.blend();
+                    vm.checkAreas();
 
-                        var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
-                        var cubes = vm.cubes[0].slice(1, vm.cubes[0].length);
+                    vm.renderer.render(vm.scene, vm.camera);
 
-                        var collisionResults = ray.intersectObjects(cubes);
-                        if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+                } else {
 
-                            if (vm.cubes[0][0].color === vm.actualColor) {
-
-                                vm.play(vm.successSound);
-                                vm.points += 10;
-
-                                if(vm.points - vm.currentThresholdPoints > 100) {
-                                    vm.currentThresholdPoints = vm.points;
-                                    ++vm.lifes;
-                                }
-
-                            } else {
-
-                                vm.play(vm.breakSound);
-
-                                if (vm.points > 0) {
-                                    vm.points -= 5;
-                                }
-
-                                --vm.lifes;
-
-                            }
-
-                            for (var i in cubes) {
-                                vm.scene.remove(cubes[i]);
-                            }
-
-                            vm.cubes = vm.cubes.slice(1, vm.cubes.length);
-                            vm.createCubeLine();
-                            break;
-
-                        }
-
-                    }
-                }
-
-                while (vm.lifesContainer.firstChild) {
-                    vm.lifesContainer.removeChild(vm.lifesContainer.firstChild);
-                }
-
-                for (var i = 0; i < vm.lifes; ++i) {
-                    var heart = new Image();
-                    heart.src = 'assets/heart_' + (vm.lifes > 4 ? 4 : vm.lifes) + '.png';
-                    vm.lifesContainer.appendChild(heart);
-                }
-
-                vm.pointsContainer.innerHTML = 'Points: ' + vm.points;
-
-                vm.stats.update();
-                vm.controls.update();
-
-                vm.renderer.render(vm.scene, vm.camera);
-
-                if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
-
-                    vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
-
-                    for (var i = 0; i < buttons.length; i++) {
-
-                        vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
-
-                    }
+                    vm.end = true;
+                    vm.backgroundSound.pause();
+                    vm.play(vm.gameOverSound);
+                    vm.endContainer.innerHTML = 'Game Over!';
 
                 }
-
-                vm.blend();
-                vm.checkAreas();
-
-                requestAnimationFrame(vm.render);
-            } else {
-
-                vm.backgroundSound.pause();
-                vm.play(vm.gameOverSound);
-                vm.endContainer.innerHTML = 'GAME OVER!';
 
             }
+
+            requestAnimationFrame(vm.render);
 
             return this;
 
@@ -189,11 +138,210 @@ THREE.EPSIHero =
             vm.createRenderer();
             vm.createTextures();
             vm.createPlayer();
+            vm.createLines();
             vm.createOrbitControls();
 
             vm.createCubeLine();
 
             vm.render();
+
+            return this;
+
+        }
+
+        /**
+         * Display controls on screen.
+         * @name displayControls
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function displayControls() {
+
+            if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
+
+
+                vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
+
+                if (vm.points >= vm.invertWebcamThreshold || vm.isWebcamInverted) {
+
+                    vm.invertWebcamColors();
+                    vm.isWebcamInverted = true;
+
+                }
+
+                if (vm.points >= vm.reverseWebcamThreshold && !vm.isWebcamReversed) {
+
+                    vm.reverseWebcam();
+                    vm.isWebcamReversed = true;
+
+                }
+
+                for (var i = 0; i < buttons.length; i++) {
+
+                    vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
+
+                }
+
+            }
+
+            return this;
+
+        }
+
+        /**
+         * Reverse the webcam image.
+         * @name reverseWebcam
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function reverseWebcam() {
+
+            vm.play(vm.revertImageSound);
+            vm.videoContext.translate(vm.videoCanvas.width, 0);
+            vm.videoContext.scale(-1, 1);
+
+        }
+
+        /**
+         * Invert the webcam colors.
+         * @name invertWebcamColors
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function invertWebcamColors() {
+
+            if (!vm.isWebcamInverted) {
+                vm.play(vm.switchColorsSound);
+            }
+
+            var imageData = vm.videoContext.getImageData(0, 0, vm.videoCanvas.width, vm.videoCanvas.height),
+                data = imageData.data;
+
+            for (var i = 0; i < data.length; i += 4) {
+                // red
+                data[i] = 255 - data[i];
+                // green
+                data[i + 1] = 255 - data[i + 1];
+                // blue
+                data[i + 2] = 255 - data[i + 2];
+            }
+
+            // overwrite original image
+            vm.videoContext.putImageData(imageData, 0, 0);
+
+            return this;
+
+        }
+
+        /**
+         * Display player's lifes and points on screen.
+         * @name displayLifesAndPoints
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function displayLifesAndPoints() {
+
+            while (vm.lifesContainer.firstChild) {
+                vm.lifesContainer.removeChild(vm.lifesContainer.firstChild);
+            }
+
+            for (var i = 0; i < vm.lifes; ++i) {
+                var heart = new Image();
+                heart.src = 'assets/heart_' + (vm.lifes > 4 ? 4 : vm.lifes) + '.png';
+                vm.lifesContainer.appendChild(heart);
+            }
+
+            vm.pointsContainer.innerHTML = 'Points: ' + vm.points;
+
+            return this;
+
+        }
+
+        /**
+         * Check and process actions on collision.
+         * @name processCollisions
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function processCollisions() {
+
+            var originPoint = vm.player.position.clone();
+            for (var vertexIndex = 0; vertexIndex < vm.player.geometry.vertices.length; ++vertexIndex) {
+
+                var localVertex = vm.player.geometry.vertices[vertexIndex].clone();
+                var globalVertex = localVertex.applyMatrix4(vm.player.matrix);
+                var directionVector = globalVertex.sub(vm.player.position);
+
+                var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
+                var cubes = vm.cubes[0];
+
+                var collisionResults = ray.intersectObjects(cubes);
+                if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+
+                    if (vm.cubes[0][vm.playerPosition].colorName === vm.actualColor) {
+
+                        vm.play(vm.successSound);
+                        vm.points += vm.scoreThreshold;
+
+                        if (vm.points - vm.currentThresholdPoints > vm.giveLifeThreshold) {
+                            ++vm.lifes;
+                            vm.play(vm.oneUpSound);
+                            vm.currentThresholdPoints = vm.points;
+                        }
+
+                    } else {
+
+                        --vm.lifes;
+                        vm.play(vm.breakSound);
+
+                    }
+
+                    for (var i in cubes) {
+                        vm.scene.remove(cubes[i]);
+                    }
+
+                    vm.cubes = vm.cubes.slice(1, vm.cubes.length);
+                    vm.createCubeLine();
+
+                    if (Math.floor(Math.random() * 100) > 50) {
+                        vm.movePlayerLeft();
+                    } else {
+                        vm.movePlayerRight();
+                    }
+
+                    break;
+
+                }
+
+            }
+
+            return this;
+
+        }
+
+        /**
+         * Move the cube line down.
+         * @name moveCubeLine
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function moveCubeLine() {
+
+            var delta = vm.clock.getDelta();
+
+            for (var i in vm.cubes) {
+
+                for (var j = 0; j < vm.cubes[i].length; ++j) {
+
+                    var divide = vm.points / 5;
+                    var threshold = (divide > 1 ? divide : 1);
+                    var speed = (vm.points > 0 ? threshold : 1);
+                    var moveDistance = vm.cubes[i][j].position.y * -delta * speed;
+                    vm.cubes[i][j].translateZ(moveDistance);
+
+                }
+
+            }
 
             return this;
 
@@ -679,6 +827,8 @@ THREE.EPSIHero =
 
 //                    console.log("Button " + buttons[b].name + " triggered.");
 
+//                    vm.play(vm.changeBlockSound);
+
                     if (buttons[b].name == "red") {
 
                         vm.cubeMaterial.map = vm.colorRed;
@@ -708,6 +858,40 @@ THREE.EPSIHero =
         }
 
         /**
+         * Move the player to the left.
+         * @name movePlayerLeft
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function movePlayerLeft() {
+
+            if (vm.player.position.x > -100) {
+                vm.player.position.x -= 50;
+                --vm.playerPosition;
+            }
+
+            return this;
+
+        }
+
+        /**
+         * Move the player to the right.
+         * @name movePlayerRight
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function movePlayerRight() {
+
+            if (vm.player.position.x < 100) {
+                vm.player.position.x += 50;
+                ++vm.playerPosition;
+            }
+
+            return this;
+
+        }
+
+        /**
          * Create a cube line (barrier) with a door.
          * @name createCubeLine
          * @return {Object} this for chaining purposes
@@ -725,26 +909,28 @@ THREE.EPSIHero =
 
             var positionX = -100,
                 colors = [vm.colorBlue, vm.colorRed, vm.colorGreen, vm.colorYellow],
-                color = getColor(),
                 numberOfCubesPerLine = 5,
-                cubes = [
-                    {color: color.name}
-                ];
+                cubes = [];
 
             for (var i = 0; i < numberOfCubesPerLine; ++i) {
+
+                var color = getColor();
 
                 var cubeGeometry = new THREE.BoxGeometry(50, 50, 50);
                 var cubeMaterial = new THREE.MeshLambertMaterial(
                     {
                         color: 0xffffff,
-                        map: (i === Math.floor(numberOfCubesPerLine / 2) ? color : getColor()),
+                        map: color,
                         emissive: 0x333333
                     }
                 );
 
                 var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
                 cube.position.set(positionX, -150, -1000);
+                cube.colorName = color.name;
+
                 vm.scene.add(cube);
+
                 cubes.push(cube);
 
                 positionX += 50;
@@ -766,18 +952,87 @@ THREE.EPSIHero =
          */
         function play(sound) {
 
-            console.log('Trying to play:', sound);
+//            console.log('Trying to play:', sound);
 
             var audio = new Audio();
 
             audio.addEventListener('loadeddata',
                 function () {
-                    console.log('Loaded and playing:', sound);
+//                    console.log('Loaded and playing:', sound);
                     audio.play();
                 }
                 , false);
 
             audio.src = sound;
+
+            return this;
+
+        }
+
+        /**
+         * Key handler.
+         * @name onKeyPress
+         * @param {Event} event The associated event
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function onKeyPress(event) {
+
+//            console.log(event.keyCode);
+
+            if (!vm.end) {
+                switch (event.keyCode) {
+                    case 32:
+                        event.preventDefault();
+                        vm.pause = !vm.pause;
+
+                        if (vm.pause) {
+                            vm.clock.stop();
+                            vm.backgroundSound.pause();
+                            vm.pauseContainer.innerHTML = 'Pause';
+                        } else {
+                            vm.clock.start();
+                            vm.backgroundSound.play();
+                            vm.pauseContainer.innerHTML = '';
+                        }
+
+                        break;
+                }
+            }
+
+            return this;
+
+        }
+
+        /**
+         * Create and display lines on screen.
+         * @name createLines
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function createLines() {
+
+            var material = new THREE.LineBasicMaterial(
+                    {
+                        color: 'white'
+                    }
+                ),
+                numberOfLines = 6,
+                positionX = -125;
+
+            for (var i = 0; i < numberOfLines; ++i) {
+
+                var geometry = new THREE.Geometry();
+                geometry.vertices.push(new THREE.Vector3(positionX, -175, -1000));
+                geometry.vertices.push(new THREE.Vector3(positionX, -250, 999999));
+
+                var line = new THREE.Line(geometry, material);
+
+                vm.scene.add(line);
+
+                positionX += 50;
+
+            }
 
             return this;
 

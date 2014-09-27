@@ -20,19 +20,6 @@ canvas {
     display: none;
 }
 
-#end {
-    z-index: 9999;
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    margin-left: -300px;
-    left: 50%;
-    top: 50%;
-    font-size: 5em;
-    font-weight: bold;
-    color: darkred;
-}
-
 #points {
     z-index: 999;
     position: absolute;
@@ -77,4 +64,27 @@ canvas {
     top: 240px;
     width: 320px;
     height: 240px;
+}
+
+#end {
+    color: darkred;
+}
+
+#pause {
+    color: ghostwhite;
+}
+
+#pause,
+#end {
+    text-transform: uppercase;
+    z-index: 9999;
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    margin-left: -300px;
+    left: 50%;
+    top: 50%;
+    font-size: 5em;
+    font-weight: bold;
+    text-align: center;
 }
