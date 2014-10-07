@@ -41,20 +41,25 @@ THREE.EPSIHero =
         vm.invertWebcamThreshold = 15;
         vm.currentThresholdPoints = 0;
         vm.reverseWebcamThreshold = 50;
-        vm.oneUpSound = 'assets/1-up.wav';
-        vm.breakSound = 'assets/break.wav';
-        vm.successSound = 'assets/coin.wav';
         vm.changeColorPositionThreshold = 30;
         vm.changeColorPositionAllowed = false;
-        vm.changeBlockSound = 'assets/bump.wav';
-        vm.gameOverSound = 'assets/gameover.wav';
-        vm.switchColorsSound = 'assets/vine.wav';
-        vm.revertImageSound = 'assets/powerup.wav';
         vm.endContainer = document.getElementById('end');
-        vm.backgroundSound = new Audio('assets/song.mp3');
         vm.lifesContainer = document.getElementById('lifes');
         vm.pauseContainer = document.getElementById('pause');
         vm.pointsContainer = document.getElementById('points');
+
+        vm.oneUpSound = 0;
+        vm.breakSound = 1;
+        vm.successSound = 2;
+        vm.changeBlockSound = 3;
+        vm.gameOverSound = 4;
+        vm.switchColorsSound = 5;
+        vm.revertImageSound = 6;
+        vm.backgroundSound = 7;
+
+        vm.finishedLoading = finishedLoading;
+        vm.createSoundEngine = createSoundEngine;
+        vm.startBackgroundSound = startBackgroundSound;
 
         vm.play = play;
         vm.blend = blend;
@@ -141,8 +146,9 @@ THREE.EPSIHero =
 
                     vm.end = true;
                     if (vm.backgroundSound) {
-                        vm.backgroundSound.pause();
+                        vm.backgroundSoundSource.stop(0);
                     }
+
                     vm.play(vm.gameOverSound);
                     vm.endContainer.innerHTML = 'Game Over!';
 
@@ -165,8 +171,6 @@ THREE.EPSIHero =
         function initialize() {
 
             vm.createSoundEngine();
-
-            vm.backgroundSound.play();
 
             vm.createUserVideo();
             vm.getUserVideo();
@@ -860,8 +864,6 @@ THREE.EPSIHero =
 
 //                    console.log("Button " + buttons[b].name + " triggered.");
 
-//                    vm.play(vm.changeBlockSound);
-
                     if (vm.buttons[b].name == "red") {
 
                         vm.setPlayerRed();
@@ -1028,24 +1030,16 @@ THREE.EPSIHero =
         /**
          * Play the given sound.
          * @name play
-         * @param {String} sound The sound to be played
+         * @param {Integer} sound The sound to be played
          * @return {Object} this for chaining purposes
          * @function
          */
         function play(sound) {
 
-//            console.log('Trying to play:', sound);
-
-            var audio = new Audio();
-
-            audio.addEventListener('loadeddata',
-                function () {
-//                    console.log('Loaded and playing:', sound);
-                    audio.play();
-                }
-                , false);
-
-            audio.src = sound;
+            var source = vm.audioContext.createBufferSource();
+            source.buffer = vm.bufferList[sound];
+            source.connect(vm.audioContext.destination);
+            source.start(0);
 
             return this;
 
@@ -1080,7 +1074,7 @@ THREE.EPSIHero =
                             vm.clock.stop();
                             vm.pauseContainer.innerHTML = 'Pause';
                             if (vm.backgroundSound) {
-                                vm.backgroundSound.pause();
+                                vm.backgroundSoundSource.stop(0);
                             }
 
                         } else {
@@ -1088,7 +1082,7 @@ THREE.EPSIHero =
                             vm.clock.start();
                             vm.pauseContainer.innerHTML = '';
                             if (vm.backgroundSound) {
-                                vm.backgroundSound.play();
+                                vm.backgroundSoundSource.play(0);
                             }
 
                         }
@@ -1330,9 +1324,8 @@ THREE.EPSIHero =
             vm.endContainer.innerHTML = '';
 
             if (vm.backgroundSound) {
-                vm.backgroundSound.pause();
-                vm.backgroundSound = null;
-                vm.backgroundSound = new Audio('assets/song.mp3').play();
+                vm.backgroundSoundSource.stop(0);
+                vm.startBackgroundSound();
             }
 
             vm.clearCubeLine();
@@ -1420,45 +1413,66 @@ THREE.EPSIHero =
 
         }
 
+        /**
+         * Create the game sound engine.
+         * @name createSoundEngine
+         * @return {Object} this for chaining purposes
+         * @function
+         */
         function createSoundEngine() {
-
-            vm.oneUpSound = 'assets/1-up.wav';
-            vm.breakSound = 'assets/break.wav';
-            vm.successSound = 'assets/coin.wav';
-            vm.changeBlockSound = 'assets/bump.wav';
-            vm.gameOverSound = 'assets/gameover.wav';
-            vm.switchColorsSound = 'assets/vine.wav';
-            vm.revertImageSound = 'assets/powerup.wav';
-            vm.backgroundSound = new Audio('assets/song.mp3');
 
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
             vm.audioContext = new AudioContext();
             vm.bufferLoader = new BufferLoader(
                 audioContext,
                 [
-                    '../sounds/hyper-reality/br-jam-loop.wav',
-                    '../sounds/hyper-reality/laughter.wav',
+                    'assets/1-up.wav',       // 0
+                    'assets/break.wav',      // 1
+                    'assets/coin.wav',       // 2
+                    'assets/bump.wav',       // 3
+                    'assets/gameover.wav',   // 4
+                    'assets/vine.wav',       // 5
+                    'assets/powerup.wav',    // 6
+                    'assets/song.mp3'        // 7
                 ],
                 vm.finishedLoading
             );
 
             vm.bufferLoader.load();
 
+            return this;
+
         }
 
+        /**
+         * Callback when sounds are ready.
+         * @name finishedLoading
+         * @return {Object} this for chaining purposes
+         * @function
+         */
         function finishedLoading(bufferList) {
 
-            var source1 = context.createBufferSource();
-            var source2 = context.createBufferSource();
+            vm.bufferList = bufferList;
+            vm.startBackgroundSound();
 
-            source1.buffer = bufferList[0];
-            source2.buffer = bufferList[1];
+            return this;
 
-            source1.connect(context.destination);
-            source2.connect(context.destination);
+        }
 
-            source1.start(0);
-            source2.start(0);
+        /**
+         * Play the backgrund sound.
+         * @name startBackgroundSound
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function startBackgroundSound() {
+
+            vm.backgroundSoundSource = vm.audioContext.createBufferSource();
+            backgroundSoundSource.buffer = bufferList[7];
+            backgroundSoundSource.connect(vm.audioContext.destination);
+            backgroundSoundSource.start(0);
+
+            return this;
 
         }
 
