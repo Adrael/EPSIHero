@@ -6,6 +6,24 @@ THREE.EPSIHero =
         // Application packaging
         var vm = this;
 
+        vm.settings =
+        {
+            pause: 'P',
+            restart: 'R',
+            accelerate: 'A',
+            muteSound: false,
+            soundVolume: 100,
+            keymap: ['Q', 'S', 'L', 'M']
+        };
+
+        vm.keymap =
+        {
+            red: null,
+            green: null,
+            blue: null,
+            yellow: null
+        };
+
         vm.lifes = 5;
         vm.cubes = [];
         vm.points = 0;
@@ -51,6 +69,7 @@ THREE.EPSIHero =
         vm.createLight = createLight;
         vm.createLines = createLines;
         vm.createStats = createStats;
+        vm.setSettings = setSettings;
         vm.shuffleArray = shuffleArray;
         vm.createPlayer = createPlayer;
         vm.hasNotStream = hasNotStream;
@@ -59,6 +78,7 @@ THREE.EPSIHero =
         vm.onKeyRelease = onKeyRelease;
         vm.createCamera = createCamera;
         vm.setPlayerRed = setPlayerRed;
+        vm.changeKeymap = changeKeymap;
         vm.clearCubeLine = clearCubeLine;
         vm.createButtons = createButtons;
         vm.setPlayerBlue = setPlayerBlue;
@@ -154,6 +174,8 @@ THREE.EPSIHero =
             vm.createOrbitControls();
 
             vm.createCubeLine();
+
+            vm.changeKeymap();
 
             vm.render();
 
@@ -1028,58 +1050,64 @@ THREE.EPSIHero =
 
             if (!vm.end || event.keyCode === 82) {
                 switch (event.keyCode) {
-                    // Space - Pause
-                    case 32:
+                    // Pause
+                    case vm.settings.pause.charCodeAt():
                         event.preventDefault();
                         vm.pause = !vm.pause;
 
                         if (vm.pause) {
+
                             vm.clock.stop();
-                            vm.backgroundSound.pause();
                             vm.pauseContainer.innerHTML = 'Pause';
+                            if(vm.backgroundSound) {
+                                vm.backgroundSound.pause();
+                            }
+
                         } else {
+
                             vm.clock.start();
-                            vm.backgroundSound.play();
                             vm.pauseContainer.innerHTML = '';
+                            if(vm.backgroundSound) {
+                                vm.backgroundSound.play();
+                            }
+
                         }
 
                         break;
 
-                    // R - Restart
-                    case 82:
+                    // Restart
+                    case vm.settings.restart.charCodeAt():
                         event.preventDefault();
                         vm.restart();
 
                         break;
 
-                    // Right Ctrl - Accelerate current line
-                    // Left Ctrl - Accelerate current line
-                    case 17:
+                    case vm.settings.accelerate.charCodeAt():
                         event.preventDefault();
                         vm.speedLineCoefficient = 5;
 
                         break;
 
-                    // Q - Red
-                    case 81:
+                    // Red
+                    case vm.keymap.red.charCodeAt():
                         event.preventDefault();
                         vm.setPlayerRed();
                         break;
 
-                    // S - Green
-                    case 83:
+                    // Green
+                    case vm.keymap.green.charCodeAt():
                         event.preventDefault();
                         vm.setPlayerGreen();
                         break;
 
-                    // L - Blue
-                    case 76:
+                    // Blue
+                    case vm.keymap.blue.charCodeAt():
                         event.preventDefault();
                         vm.setPlayerBlue();
                         break;
 
-                    // M - Yellow
-                    case 77:
+                    // Yellow
+                    case vm.keymap.yellow.charCodeAt():
                         event.preventDefault();
                         vm.setPlayerYellow();
                         break;
@@ -1103,9 +1131,8 @@ THREE.EPSIHero =
 
             if (!vm.end) {
                 switch (event.keyCode) {
-                    // Right Ctrl - Accelerate current line
-                    // Left Ctrl - Accelerate current line
-                    case 17:
+                    // Decelerate current line
+                    case vm.settings.accelerate.charCodeAt():
                         event.preventDefault();
                         vm.speedLineCoefficient = 1;
 
@@ -1284,6 +1311,48 @@ THREE.EPSIHero =
 
             vm.clearCubeLine();
             vm.createCubeLine();
+
+            return this;
+
+        }
+
+        /**
+         * Change the settings of the game.
+         * @name setSettings
+         * @param {Object} settings The new settings to apply
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function setSettings(settings) {
+
+            vm.settings = settings;
+            changeKeymap();
+
+            return this;
+
+        }
+
+        /**
+         * Change the keymap of the game.
+         * @name changeKeymap
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function changeKeymap() {
+
+            if(!vm.settings.keymap || vm.settings.keymap.length < 4) {
+
+                console.error('Missing or invalid keymap!');
+                return this;
+
+            }
+
+            var keymap = shuffleArray(vm.settings.keymap);
+
+            vm.keymap.red = keymap[0];
+            vm.keymap.blue = keymap[1];
+            vm.keymap.green = keymap[2];
+            vm.keymap.yellow = keymap[3];
 
             return this;
 
