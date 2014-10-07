@@ -164,6 +164,8 @@ THREE.EPSIHero =
          */
         function initialize() {
 
+            vm.createSoundEngine();
+
             vm.backgroundSound.play();
 
             vm.createUserVideo();
@@ -348,7 +350,8 @@ THREE.EPSIHero =
                 var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
 
                 var collisionResults = ray.intersectObjects(vm.cubes[0]);
-                if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+                if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ||
+                    vm.cubes[0][vm.playerPosition].position.z >= vm.player.position.z) {
 
                     if (vm.cubes[0][vm.playerPosition].colorName === vm.actualColor) {
 
@@ -1308,9 +1311,14 @@ THREE.EPSIHero =
          */
         function restart() {
 
+            if (vm.isWebcamReversed) {
+                vm.reverseWebcam();
+            }
+
             vm.lifes = 5;
             vm.points = 0;
             vm.end = false;
+            vm.demo = false;
             vm.pause = false;
             vm.playerPosition = 2;
             vm.speedLineCoefficient = 1;
@@ -1376,6 +1384,12 @@ THREE.EPSIHero =
 
         }
 
+        /**
+         * Demo mode.
+         * @name playDemo
+         * @return {Object} this for chaining purposes
+         * @function
+         */
         function playDemo() {
 
             if (vm.cubes[0][vm.playerPosition].colorName !== vm.actualColor) {
@@ -1403,6 +1417,48 @@ THREE.EPSIHero =
             }
 
             return this;
+
+        }
+
+        function createSoundEngine() {
+
+            vm.oneUpSound = 'assets/1-up.wav';
+            vm.breakSound = 'assets/break.wav';
+            vm.successSound = 'assets/coin.wav';
+            vm.changeBlockSound = 'assets/bump.wav';
+            vm.gameOverSound = 'assets/gameover.wav';
+            vm.switchColorsSound = 'assets/vine.wav';
+            vm.revertImageSound = 'assets/powerup.wav';
+            vm.backgroundSound = new Audio('assets/song.mp3');
+
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            vm.audioContext = new AudioContext();
+            vm.bufferLoader = new BufferLoader(
+                audioContext,
+                [
+                    '../sounds/hyper-reality/br-jam-loop.wav',
+                    '../sounds/hyper-reality/laughter.wav',
+                ],
+                vm.finishedLoading
+            );
+
+            vm.bufferLoader.load();
+
+        }
+
+        function finishedLoading(bufferList) {
+
+            var source1 = context.createBufferSource();
+            var source2 = context.createBufferSource();
+
+            source1.buffer = bufferList[0];
+            source2.buffer = bufferList[1];
+
+            source1.connect(context.destination);
+            source2.connect(context.destination);
+
+            source1.start(0);
+            source2.start(0);
 
         }
 
