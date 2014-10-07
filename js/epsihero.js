@@ -24,6 +24,8 @@ THREE.EPSIHero =
             yellow: null
         };
 
+        vm.demo = false;
+
         vm.lifes = 5;
         vm.cubes = [];
         vm.points = 0;
@@ -59,6 +61,7 @@ THREE.EPSIHero =
         vm.render = render;
         vm.fastAbs = fastAbs;
         vm.restart = restart;
+        vm.playDemo = playDemo;
         vm.threshold = threshold;
         vm.hasStream = hasStream;
         vm.createFog = createFog;
@@ -119,6 +122,11 @@ THREE.EPSIHero =
                     if (vm.gameStart && vm.cubes.length > 0) {
                         vm.moveCubeLine();
                         vm.processCollisions();
+
+                        if (vm.demo) {
+                            vm.playDemo();
+                        }
+
                     }
 
                     vm.displayControls();
@@ -234,15 +242,18 @@ THREE.EPSIHero =
                 if (vm.changeColorPositionAllowed) {
 
                     vm.createButtons();
+                    vm.changeKeymap();
                     vm.changeColorPositionAllowed = false;
 
                 }
 
             }
 
-            for (var i = 0; i < buttons.length; i++) {
+            for (var i = 0; i < vm.buttons.length; i++) {
 
                 vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
+                vm.layer2Context.fillStyle = '#ffffff';
+                vm.layer2Context.fillText(vm.keymap[vm.buttons[i].name], vm.buttons[i].x + 13, vm.buttons[i].y + 19);
 
             }
 
@@ -848,19 +859,19 @@ THREE.EPSIHero =
 
 //                    vm.play(vm.changeBlockSound);
 
-                    if (buttons[b].name == "red") {
+                    if (vm.buttons[b].name == "red") {
 
                         vm.setPlayerRed();
 
-                    } else if (buttons[b].name == "green") {
+                    } else if (vm.buttons[b].name == "green") {
 
                         vm.setPlayerGreen();
 
-                    } else if (buttons[b].name == "blue") {
+                    } else if (vm.buttons[b].name == "blue") {
 
                         vm.setPlayerBlue();
 
-                    } else if (buttons[b].name == "yellow") {
+                    } else if (vm.buttons[b].name == "yellow") {
 
                         vm.setPlayerYellow();
 
@@ -1049,7 +1060,13 @@ THREE.EPSIHero =
 //            console.log(event.keyCode);
 
             if (!vm.end || event.keyCode === 82) {
+
                 switch (event.keyCode) {
+                    // d - Demo mode
+                    case 68:
+                        vm.demo = !vm.demo;
+                        break;
+
                     // Pause
                     case vm.settings.pause.charCodeAt():
                         event.preventDefault();
@@ -1059,7 +1076,7 @@ THREE.EPSIHero =
 
                             vm.clock.stop();
                             vm.pauseContainer.innerHTML = 'Pause';
-                            if(vm.backgroundSound) {
+                            if (vm.backgroundSound) {
                                 vm.backgroundSound.pause();
                             }
 
@@ -1067,7 +1084,7 @@ THREE.EPSIHero =
 
                             vm.clock.start();
                             vm.pauseContainer.innerHTML = '';
-                            if(vm.backgroundSound) {
+                            if (vm.backgroundSound) {
                                 vm.backgroundSound.play();
                             }
 
@@ -1112,6 +1129,7 @@ THREE.EPSIHero =
                         vm.setPlayerYellow();
                         break;
                 }
+
             }
 
             return this;
@@ -1340,7 +1358,7 @@ THREE.EPSIHero =
          */
         function changeKeymap() {
 
-            if(!vm.settings.keymap || vm.settings.keymap.length < 4) {
+            if (!vm.settings.keymap || vm.settings.keymap.length < 4) {
 
                 console.error('Missing or invalid keymap!');
                 return this;
@@ -1353,6 +1371,36 @@ THREE.EPSIHero =
             vm.keymap.blue = keymap[1];
             vm.keymap.green = keymap[2];
             vm.keymap.yellow = keymap[3];
+
+            return this;
+
+        }
+
+        function playDemo() {
+
+            if (vm.cubes[0][vm.playerPosition].colorName !== vm.actualColor) {
+
+                switch (vm.cubes[0][vm.playerPosition].colorName) {
+
+                    case 'red':
+                        vm.setPlayerRed();
+                        break;
+
+                    case 'green':
+                        vm.setPlayerGreen();
+                        break;
+
+                    case 'blue':
+                        vm.setPlayerBlue();
+                        break;
+
+                    case 'yellow':
+                        vm.setPlayerYellow();
+                        break;
+
+                }
+
+            }
 
             return this;
 
