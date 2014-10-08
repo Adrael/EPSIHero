@@ -255,6 +255,7 @@ THREE.EPSIHero =
 
             }
 
+            vm.layer2Context.clearRect(0, 0, vm.layer2Canvas.width, vm.layer2Canvas.height);
             for (var i = 0; i < vm.buttons.length; i++) {
 
                 vm.layer2Context.drawImage(vm.buttons[i].image, vm.buttons[i].x, vm.buttons[i].y, vm.buttons[i].w, vm.buttons[i].h);
@@ -426,15 +427,17 @@ THREE.EPSIHero =
 
             var delta = vm.clock.getDelta();
 
+            // DYNAMIC DIFFICULTY ADJUSTMENT
+            var divide = Math.log(vm.points);
+            var threshold = (divide > 1 ? divide : 1);
+            var speed = (vm.points > 0 ? threshold : 1) * vm.speedLineCoefficient;
+            var moveDistanceCoeff = -delta * speed;
+
             for (var i in vm.cubes) {
 
                 for (var j = 0; j < vm.cubes[i].length; ++j) {
 
-                    var divide = vm.points / 5;
-                    var threshold = (divide > 1 ? divide : 1);
-                    var speed = (vm.points > 0 ? threshold : 1) * vm.speedLineCoefficient;
-                    var moveDistance = vm.cubes[i][j].position.y * -delta * speed;
-                    vm.cubes[i][j].translateZ(moveDistance);
+                    vm.cubes[i][j].translateZ(vm.cubes[i][j].position.y * moveDistanceCoeff);
 
                 }
 
@@ -1328,6 +1331,8 @@ THREE.EPSIHero =
                 vm.startBackgroundSound();
             }
 
+            vm.player.position.set(0, -150, 0);
+
             vm.clearCubeLine();
             vm.createCubeLine();
 
@@ -1460,7 +1465,7 @@ THREE.EPSIHero =
         }
 
         /**
-         * Play the backgrund sound.
+         * Play the background sound.
          * @name startBackgroundSound
          * @return {Object} this for chaining purposes
          * @function
