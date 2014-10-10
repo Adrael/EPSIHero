@@ -36,8 +36,16 @@ canvas {
     right: 10px;
 }
 
-#lifes img {
-    width: 32px;
+#clocks {
+    z-index: 999;
+    position: absolute;
+    bottom: 50px;
+    left: 10px;
+}
+
+#lifes img,
+#clocks img {
+    width: 64px;
     height: 32px;
 }
 

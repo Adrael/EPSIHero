@@ -9,6 +9,7 @@ THREE.EPSIHero =
         vm.settings =
         {
             pause: 'P',
+            bulletTime: 'B',
             restart: 'R',
             accelerate: 'A',
             muteSound: false,
@@ -25,8 +26,14 @@ THREE.EPSIHero =
         };
 
         vm.demo = false;
+        vm.bulletTimes = 1;
+        vm.maxBulletTimes = 3;
+        vm.isBulletTime = false;
+        vm.hasBulletTime = false;
+        vm.launchBulletTime = launchBulletTime;
 
         vm.lifes = 5;
+        vm.maxLifes = 5;
         vm.cubes = [];
         vm.points = 0;
         vm.end = false;
@@ -47,6 +54,7 @@ THREE.EPSIHero =
         vm.lifesContainer = document.getElementById('lifes');
         vm.pauseContainer = document.getElementById('pause');
         vm.pointsContainer = document.getElementById('points');
+        vm.clocksContainer = document.getElementById('clocks');
 
         vm.oneUpSound = 0;
         vm.breakSound = 1;
@@ -59,6 +67,7 @@ THREE.EPSIHero =
 
         vm.finishedLoading = finishedLoading;
         vm.createSoundEngine = createSoundEngine;
+        vm.loadBackgroundSound = loadBackgroundSound;
         vm.startBackgroundSound = startBackgroundSound;
 
         vm.play = play;
@@ -191,6 +200,8 @@ THREE.EPSIHero =
 
             vm.changeKeymap();
 
+//            vm.startBackgroundSound();
+
             vm.render();
 
             return this;
@@ -207,7 +218,7 @@ THREE.EPSIHero =
 
             var img = new THREE.MeshBasicMaterial(
                 {
-                    map: THREE.ImageUtils.loadTexture('assets/background.jpg')
+                    map: THREE.ImageUtils.loadTexture('assets/images/background.jpg')
                 }
             );
 
@@ -321,14 +332,26 @@ THREE.EPSIHero =
          */
         function displayLifesAndPoints() {
 
+            // LIFES
             while (vm.lifesContainer.firstChild) {
                 vm.lifesContainer.removeChild(vm.lifesContainer.firstChild);
             }
 
             for (var i = 0; i < vm.lifes; ++i) {
                 var heart = new Image();
-                heart.src = 'assets/heart_' + (vm.lifes > 4 ? 4 : vm.lifes) + '.png';
+                heart.src = 'assets/images/life.png';
                 vm.lifesContainer.appendChild(heart);
+            }
+
+            // BULLET TIMES
+            while (vm.clocksContainer.firstChild) {
+                vm.clocksContainer.removeChild(vm.clocksContainer.firstChild);
+            }
+
+            for (var j = 0; j < vm.bulletTimes; ++j) {
+                var clock = new Image();
+                clock.src = 'assets/images/clock.png';
+                vm.clocksContainer.appendChild(clock);
             }
 
             vm.pointsContainer.innerHTML = 'Points: ' + vm.points;
@@ -363,10 +386,17 @@ THREE.EPSIHero =
                         vm.play(vm.successSound);
                         vm.points += vm.scoreThreshold;
 
-                        if (vm.points - vm.currentThresholdPoints > vm.giveLifeThreshold) {
+                        if (vm.lifes < vm.maxLifes && vm.points - vm.currentThresholdPoints > vm.giveLifeThreshold) {
                             ++vm.lifes;
                             vm.play(vm.oneUpSound);
                             vm.currentThresholdPoints = vm.points;
+                        }
+
+                        if(vm.hasBulletTime) {
+                            if(vm.bulletTimes < vm.maxBulletTimes) {
+                                ++vm.bulletTimes;
+                            }
+                            vm.hasBulletTime = false;
                         }
 
                     } else {
@@ -376,14 +406,14 @@ THREE.EPSIHero =
 
                     }
 
-                    vm.clearCubeLine();
-                    vm.createCubeLine();
-
                     if (Math.floor(Math.random() * 100) > 50) {
                         vm.movePlayerLeft();
                     } else {
                         vm.movePlayerRight();
                     }
+
+                    vm.clearCubeLine();
+                    vm.createCubeLine();
 
                     if (vm.points >= vm.changeColorPositionThreshold) {
                         vm.changeColorPositionAllowed = true;
@@ -609,20 +639,35 @@ THREE.EPSIHero =
          */
         function createTextures() {
 
-            vm.colorRed = THREE.ImageUtils.loadTexture("assets/SquareRed.png");
+            // BASICS
+
+            vm.colorRed = THREE.ImageUtils.loadTexture("assets/images/SquareRed.png");
             vm.colorRed.name = 'red';
 
-            vm.colorGreen = THREE.ImageUtils.loadTexture("assets/SquareGreen.png");
+            vm.colorGreen = THREE.ImageUtils.loadTexture("assets/images/SquareGreen.png");
             vm.colorGreen.name = 'green';
 
-            vm.colorBlue = THREE.ImageUtils.loadTexture("assets/SquareBlue.png");
+            vm.colorBlue = THREE.ImageUtils.loadTexture("assets/images/SquareBlue.png");
             vm.colorBlue.name = 'blue';
 
-            vm.colorYellow = THREE.ImageUtils.loadTexture("assets/SquareYellow.png");
+            vm.colorYellow = THREE.ImageUtils.loadTexture("assets/images/SquareYellow.png");
             vm.colorYellow.name = 'yellow';
 
-            vm.colorGray = THREE.ImageUtils.loadTexture("assets/SquareGray.png");
+            vm.colorGray = THREE.ImageUtils.loadTexture("assets/images/SquareGray.png");
             vm.colorGray.name = 'gray';
+
+            // BULLET TIME
+            vm.colorRedClock = THREE.ImageUtils.loadTexture("assets/images/SquareRedClock.png");
+            vm.colorRedClock.name = 'red';
+
+            vm.colorGreenClock = THREE.ImageUtils.loadTexture("assets/images/SquareGreenClock.png");
+            vm.colorGreenClock.name = 'green';
+
+            vm.colorBlueClock = THREE.ImageUtils.loadTexture("assets/images/SquareBlueClock.png");
+            vm.colorBlueClock.name = 'blue';
+
+            vm.colorYellowClock = THREE.ImageUtils.loadTexture("assets/images/SquareYellowClock.png");
+            vm.colorYellowClock.name = 'yellow';
 
             return this;
 
@@ -986,22 +1031,34 @@ THREE.EPSIHero =
          */
         function createCubeLine() {
 
-            function getColor() {
-                var c = colors[Math.round(Math.random() * colors.length)];
+            var positionX = -100,
+                colors = [vm.colorBlue, vm.colorRed, vm.colorGreen, vm.colorYellow],
+                colorsClock = [vm.colorBlueClock, vm.colorRedClock, vm.colorGreenClock, vm.colorYellowClock],
+                numberOfCubesPerLine = 5,
+                cubes = [];
+
+            vm.hasBulletTime = vm.bulletTimes < vm.maxBulletTimes && Math.floor(Math.random() * 100) > 90;
+            var madeBulletTime = false,
+                bulletTimePosition = vm.playerPosition;
+
+            function getColor(position) {
+                var arr = colors;
+
+                if (vm.hasBulletTime && !madeBulletTime && position === bulletTimePosition) {
+                    arr = colorsClock;
+                    madeBulletTime = true;
+                }
+
+                var c = arr[Math.round(Math.random() * arr.length)];
                 while (!c) {
-                    c = colors[Math.round(Math.random() * colors.length)];
+                    c = arr[Math.round(Math.random() * arr.length)];
                 }
                 return c;
             }
 
-            var positionX = -100,
-                colors = [vm.colorBlue, vm.colorRed, vm.colorGreen, vm.colorYellow],
-                numberOfCubesPerLine = 5,
-                cubes = [];
-
             for (var i = 0; i < numberOfCubesPerLine; ++i) {
 
-                var color = getColor();
+                var color = getColor(i);
 
                 var cubeGeometry = new THREE.BoxGeometry(50, 50, 50);
                 var cubeMaterial = new THREE.MeshLambertMaterial(
@@ -1039,10 +1096,14 @@ THREE.EPSIHero =
          */
         function play(sound) {
 
-            var source = vm.audioContext.createBufferSource();
-            source.buffer = vm.bufferList[sound];
-            source.connect(vm.audioContext.destination);
-            source.start(0);
+            var bufferListTmp = (vm.bufferList || bufferList);
+
+            if(bufferListTmp) {
+                var source = vm.audioContext.createBufferSource();
+                source.buffer = bufferListTmp[sound];
+                source.connect(vm.audioContext.destination);
+                source.start(0);
+            }
 
             return this;
 
@@ -1069,25 +1130,28 @@ THREE.EPSIHero =
 
                     // Pause
                     case vm.settings.pause.charCodeAt():
-                        event.preventDefault();
-                        vm.pause = !vm.pause;
 
-                        if (vm.pause) {
+                        if (!vm.isBulletTime) {
+                            event.preventDefault();
+                            vm.pause = !vm.pause;
 
-                            vm.clock.stop();
-                            vm.pauseContainer.innerHTML = 'Pause';
-                            if (vm.backgroundSound) {
-                                vm.backgroundSoundSource.stop(0);
+                            if (vm.pause) {
+
+                                vm.clock.stop();
+                                vm.pauseContainer.innerHTML = 'Pause';
+                                if (vm.backgroundSound) {
+                                    vm.backgroundSoundSource.stop(0);
+                                }
+
+                            } else {
+
+                                vm.clock.start();
+                                vm.pauseContainer.innerHTML = '';
+                                if (vm.backgroundSound) {
+                                    vm.backgroundSoundSource.play(0);
+                                }
+
                             }
-
-                        } else {
-
-                            vm.clock.start();
-                            vm.pauseContainer.innerHTML = '';
-                            if (vm.backgroundSound) {
-                                vm.backgroundSoundSource.play(0);
-                            }
-
                         }
 
                         break;
@@ -1099,9 +1163,23 @@ THREE.EPSIHero =
 
                         break;
 
+                    // Accelerate
                     case vm.settings.accelerate.charCodeAt():
-                        event.preventDefault();
-                        vm.speedLineCoefficient = 5;
+
+                        if (!vm.isBulletTime) {
+                            event.preventDefault();
+                            vm.speedLineCoefficient = 5;
+                        }
+
+                        break;
+
+                    // Bullet time
+                    case vm.settings.bulletTime.charCodeAt():
+
+                        if (!vm.isBulletTime) {
+                            event.preventDefault();
+                            vm.launchBulletTime();
+                        }
 
                         break;
 
@@ -1210,7 +1288,7 @@ THREE.EPSIHero =
 
             /* RED BUTTON */
             var button1 = new Image();
-            button1.src = 'assets/buttonRed.png';
+            button1.src = 'assets/images/buttonRed.png';
             var buttonData1 =
             {
                 name: 'red',
@@ -1225,7 +1303,7 @@ THREE.EPSIHero =
 
             /* GREEN BUTTON */
             var button2 = new Image();
-            button2.src = 'assets/buttonGreen.png';
+            button2.src = 'assets/images/buttonGreen.png';
             var buttonData2 =
             {
                 name: 'green',
@@ -1240,7 +1318,7 @@ THREE.EPSIHero =
 
             /* BLUE BUTTON */
             var button3 = new Image();
-            button3.src = 'assets/buttonBlue.png';
+            button3.src = 'assets/images/buttonBlue.png';
             var buttonData3 =
             {
                 name: 'blue',
@@ -1255,7 +1333,7 @@ THREE.EPSIHero =
 
             /* YELLOW BUTTON */
             var button4 = new Image();
-            button4.src = 'assets/buttonYellow.png';
+            button4.src = 'assets/images/buttonYellow.png';
             var buttonData4 =
             {
                 name: 'yellow',
@@ -1326,8 +1404,9 @@ THREE.EPSIHero =
             vm.changeColorPositionAllowed = false;
             vm.endContainer.innerHTML = '';
 
-            if (vm.backgroundSound) {
+            if (vm.backgroundSoundSource) {
                 vm.backgroundSoundSource.stop(0);
+                vm.loadBackgroundSound();
                 vm.startBackgroundSound();
             }
 
@@ -1431,14 +1510,14 @@ THREE.EPSIHero =
             vm.bufferLoader = new BufferLoader(
                 audioContext,
                 [
-                    'assets/1-up.wav',       // 0
-                    'assets/break.wav',      // 1
-                    'assets/coin.wav',       // 2
-                    'assets/bump.wav',       // 3
-                    'assets/gameover.wav',   // 4
-                    'assets/vine.wav',       // 5
-                    'assets/powerup.wav',    // 6
-                    'assets/song.mp3'        // 7
+                    'assets/sounds/1-up.wav',       // 0
+                    'assets/sounds/break.wav',      // 1
+                    'assets/sounds/coin.wav',       // 2
+                    'assets/sounds/bump.wav',       // 3
+                    'assets/sounds/gameover.wav',   // 4
+                    'assets/sounds/vine.wav',       // 5
+                    'assets/sounds/powerup.wav',    // 6
+                    'assets/sounds/song.mp3'        // 7
                 ],
                 vm.finishedLoading
             );
@@ -1465,6 +1544,22 @@ THREE.EPSIHero =
         }
 
         /**
+         * Load the background sound.
+         * @name loadBackgroundSound
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function loadBackgroundSound() {
+
+            vm.backgroundSoundSource = vm.audioContext.createBufferSource();
+            vm.backgroundSoundSource.buffer = vm.bufferList[7];
+            vm.backgroundSoundSource.connect(vm.audioContext.destination);
+
+            return this;
+
+        }
+
+        /**
          * Play the background sound.
          * @name startBackgroundSound
          * @return {Object} this for chaining purposes
@@ -1473,9 +1568,38 @@ THREE.EPSIHero =
         function startBackgroundSound() {
 
             vm.backgroundSoundSource = vm.audioContext.createBufferSource();
-            backgroundSoundSource.buffer = bufferList[7];
-            backgroundSoundSource.connect(vm.audioContext.destination);
-            backgroundSoundSource.start(0);
+            vm.backgroundSoundSource.buffer = vm.bufferList[7];
+            vm.backgroundSoundSource.connect(vm.audioContext.destination);
+            vm.backgroundSoundSource.start(0);
+
+            return this;
+
+        }
+
+        /**
+         * Launch bullet time.
+         * @name launchBulletTime
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function launchBulletTime() {
+
+            if (vm.bulletTimes > 0) {
+
+                --vm.bulletTimes;
+                vm.isBulletTime = true;
+                vm.speedLineCoefficient = 0.1;
+
+                setTimeout(
+                    function () {
+                        vm.speedLineCoefficient = 1;
+                        vm.isBulletTime = false;
+                    },
+
+                    3000
+                );
+
+            }
 
             return this;
 
