@@ -69,6 +69,7 @@ THREE.EPSIHero =
         vm.createSoundEngine = createSoundEngine;
         vm.loadBackgroundSound = loadBackgroundSound;
         vm.startBackgroundSound = startBackgroundSound;
+        vm.createGlitchEngine = createGlitchEngine;
 
         vm.play = play;
         vm.blend = blend;
@@ -126,12 +127,12 @@ THREE.EPSIHero =
          */
         function render() {
 
-            vm.stats.update();
-            vm.controls.update();
-
             if (!vm.pause && !vm.end) {
 
                 if (vm.lifes > 0) {
+
+                    vm.stats.update();
+                    vm.controls.update();
 
                     if (vm.gameStart && vm.cubes.length > 0) {
                         vm.moveCubeLine();
@@ -149,21 +150,26 @@ THREE.EPSIHero =
                     vm.blend();
                     vm.checkAreas();
 
-                    vm.renderer.render(vm.scene, vm.camera);
-
                 } else {
 
                     vm.end = true;
-                    if (vm.backgroundSound) {
+                    if (vm.backgroundSoundSource) {
                         vm.backgroundSoundSource.stop(0);
                     }
 
                     vm.play(vm.gameOverSound);
                     vm.endContainer.innerHTML = 'Game Over!';
 
+                    vm.badTVPasses = new THREEx.BadTVPasses();
+                    vm.badTVPasses.addPassesTo(vm.composer);
+                    vm.badTVPasses.update(vm.clock.getDelta(), performance.now());
+
                 }
 
             }
+
+//            vm.renderer.render(vm.scene, vm.camera);
+            vm.composer.render();
 
             requestAnimationFrame(vm.render);
 
@@ -195,14 +201,32 @@ THREE.EPSIHero =
             vm.createButtons();
             vm.createLines();
             vm.createOrbitControls();
+            vm.createGlitchEngine();
 
             vm.createCubeLine();
 
             vm.changeKeymap();
 
-//            vm.startBackgroundSound();
-
             vm.render();
+
+            return this;
+
+        }
+
+        /**
+         * Create the glitch engine.
+         * @name createGlitchEngine
+         * @return {Object} this for chaining purposes
+         * @function
+         */
+        function createGlitchEngine() {
+
+
+            vm.composer = new THREE.EffectComposer(vm.renderer);
+            vm.composer.addPass(new THREE.RenderPass(vm.scene, vm.camera));
+
+            vm.glitchPass = new THREE.GlitchPass();
+            vm.composer.addPass(vm.glitchPass);
 
             return this;
 
@@ -392,8 +416,8 @@ THREE.EPSIHero =
                             vm.currentThresholdPoints = vm.points;
                         }
 
-                        if(vm.hasBulletTime) {
-                            if(vm.bulletTimes < vm.maxBulletTimes) {
+                        if (vm.hasBulletTime) {
+                            if (vm.bulletTimes < vm.maxBulletTimes) {
                                 ++vm.bulletTimes;
                             }
                             vm.hasBulletTime = false;
@@ -403,6 +427,7 @@ THREE.EPSIHero =
 
                         --vm.lifes;
                         vm.play(vm.breakSound);
+                        vm.glitchPass.glitchDuring(10);
 
                     }
 
@@ -1098,7 +1123,7 @@ THREE.EPSIHero =
 
             var bufferListTmp = (vm.bufferList || bufferList);
 
-            if(bufferListTmp) {
+            if (bufferListTmp) {
                 var source = vm.audioContext.createBufferSource();
                 source.buffer = bufferListTmp[sound];
                 source.connect(vm.audioContext.destination);
@@ -1537,7 +1562,7 @@ THREE.EPSIHero =
         function finishedLoading(bufferList) {
 
             vm.bufferList = bufferList;
-            vm.startBackgroundSound();
+//            vm.startBackgroundSound();
 
             return this;
 
