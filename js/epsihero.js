@@ -187,6 +187,7 @@ THREE.EPSIHero =
 
             vm.createSoundEngine();
 
+            // TODO: if ?camera=false alors ne pas checker et appeller hasNotStream()
             vm.createUserVideo();
             vm.getUserVideo();
 
@@ -280,13 +281,13 @@ THREE.EPSIHero =
 
                 }
 
-                if (vm.changeColorPositionAllowed) {
+            }
 
-                    vm.createButtons();
-                    vm.changeKeymap();
-                    vm.changeColorPositionAllowed = false;
+            if (vm.changeColorPositionAllowed) {
 
-                }
+                vm.createButtons();
+                vm.changeKeymap();
+                vm.changeColorPositionAllowed = false;
 
             }
 
