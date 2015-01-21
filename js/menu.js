@@ -16,26 +16,11 @@ THREE.menu =
         vm.createText = createText;
         vm.createMenu = createMenu;
 
-        vm.title = {
-            font : "droid serif",
-            weight : "bold",
-            size : 50,
-            height : 20
-        };
-
         vm.item = {
             font : "droid serif",
             size : 30,
             height : 10
         };
-
-        vm.createProjector = createProjector;
-        vm.projector = null;
-        vm.collidableMeshList = [];
-        vm.onDocumentMouseMove = onDocumentMouseMove;
-
-        vm.clickedBox = clickedBox;
-
 
         return vm;
 
@@ -65,7 +50,6 @@ THREE.menu =
             vm.createCamera();
             vm.createRenderer();
             vm.createMenu();
-            vm.createProjector();
             vm.render();
 
             return this;
@@ -182,7 +166,7 @@ THREE.menu =
             var textBoxMaterial = new THREE.MeshLambertMaterial({
                 transparent: true,
                 color:'red',
-                opacity: 0
+                opacity:0
             });
             var textBox = new THREE.Mesh(textBoxGeometry, textBoxMaterial);
 
@@ -197,7 +181,8 @@ THREE.menu =
             textBox.name = name;
 
             vm.scene.add(textBox);
-            vm.collidableMeshList.push(textBox);
+            //vm.collidableMeshList.push(textBox);
+            return textBox;
         }
 
         /**
@@ -208,75 +193,23 @@ THREE.menu =
         */
         function createMenu() {
 
-            var title = createText("EPSIHero", vm.title);
-            title.position.set(0,100,0);
-            title.material = new THREE.MeshPhongMaterial();
+            var domEvents = new THREEx.DomEvents(vm.camera, vm.renderer.domElement);
 
-            vm.scene.add(title);
-            createBoxFromText(title,"title");
-
-            var webcamText = createText("Webcam",vm.item);
-            webcamText.position.set(-240,0,0);
-            webcamText.rotateY(0.4);
-            webcamText.rotateX(-0.1);
+            var webcamText = createText("Avec Webcam",vm.item);
+            webcamText.position.set(0,100,0);
             webcamText.material = new THREE.MeshPhongMaterial();
             vm.scene.add(webcamText);
-            createBoxFromText(webcamText,"webcam");
+            var webcamBox = createBoxFromText(webcamText,"webcam");
+            THREEx.Linkify(domEvents, webcamBox, "game.html?camera=true", true);
 
-            var controlsText = createText("Controls", vm.item);
-            controlsText.position.set(250,-100,0);
-            controlsText.rotateY(-0.5);
-            controlsText.rotateX(-0.1);
+            var controlsText = createText("Sans Webcam",vm.item);
+            controlsText.position.set(0,50,0);
+            controlsText.rotateX(-.1);
             controlsText.material = new THREE.MeshPhongMaterial();
             vm.scene.add(controlsText);
-            createBoxFromText(controlsText,"controls");
+            var controlsBox = createBoxFromText(controlsText,"controls");
+            THREEx.Linkify(domEvents, controlsBox, "game.html?camera=false", true);
 
             return this;
         }
-
-        /**
-         * Create the application's projector
-         * @name createProjector
-         * @function
-         */
-        function createProjector() {
-
-            vm.projector = new THREE.Projector();
-
-            return this;
-
-        }
-
-        function onDocumentMouseMove(event){
-
-            var victor = new THREE.Vector3(
-                (event.clientX / window.innerWidth)*2-1,
-                -(event.clientY / window.innerHeight)*2+1,
-                0.5);
-
-            vm.projector.unprojectVector(victor, vm.camera);
-
-            var raycaster = new THREE.Raycaster(vm.camera.position, victor.sub(vm.camera.position).normalize());
-
-            var intersects = raycaster.intersectObjects(vm.collidableMeshList);
-
-            if(intersects.length > 0) {
-                console.log(intersects[0].object.name);
-                vm.clickedBox(intersects[0].object.name);
-            }
-            event.preventDefault();
-
-            return this;
-        }
-
-        function clickedBox(boxname){
-
-            if(boxname == "webcam") {
-                window.location = "epsihero_cam.html";
-            } else if(boxname == "") {
-                window.location = "epsihero_controls.html";
-            }
-
-        }
-
     })();

@@ -1164,6 +1164,7 @@ THREE.EPSIHero =
 
                                 vm.clock.stop();
                                 vm.pauseContainer.innerHTML = 'Pause';
+                                //vm.display3DText("Pause");
                                 if (vm.backgroundSound) {
                                     vm.backgroundSoundSource.stop(0);
                                 }
