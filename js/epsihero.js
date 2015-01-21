@@ -178,6 +178,22 @@ THREE.EPSIHero =
         }
 
         /**
+         * getParameterByName
+         * @name getParameterByName
+         * @function
+         */
+        function getParameterByName(name) {
+
+            name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+
+            var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                results = regex.exec(location.search);
+
+            return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+
+        }
+
+        /**
          * Set everything up.
          * @name initialize
          * @return {Object} this for chaining purposes
@@ -185,11 +201,16 @@ THREE.EPSIHero =
          */
         function initialize() {
 
-            vm.createSoundEngine();
+            vm.playingWithCamera = (getParameterByName('camera') === 'true');
 
-            // TODO: if ?camera=false alors ne pas checker et appeller hasNotStream()
+            vm.createSoundEngine();
             vm.createUserVideo();
-            vm.getUserVideo();
+
+            if (vm.playingWithCamera) {
+
+                vm.getUserVideo();
+
+            }
 
             vm.createScene();
             vm.createFog();
@@ -207,6 +228,12 @@ THREE.EPSIHero =
             vm.createCubeLine();
 
             vm.changeKeymap();
+
+            if (!vm.playingWithCamera) {
+
+                hasNotStream({code: -100});
+
+            }
 
             vm.render();
 
@@ -263,7 +290,15 @@ THREE.EPSIHero =
          */
         function displayControls() {
 
-            if (vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
+            if (vm.changeColorPositionAllowed) {
+
+                vm.createButtons();
+                vm.changeKeymap();
+                vm.changeColorPositionAllowed = false;
+
+            }
+
+            if (vm.playingWithCamera && vm.camvideo.readyState === vm.camvideo.HAVE_ENOUGH_DATA) {
 
                 vm.videoContext.drawImage(vm.camvideo, 0, 0, vm.videoCanvas.width, vm.videoCanvas.height);
 
@@ -280,14 +315,6 @@ THREE.EPSIHero =
                     vm.isWebcamReversed = true;
 
                 }
-
-            }
-
-            if (vm.changeColorPositionAllowed) {
-
-                vm.createButtons();
-                vm.changeKeymap();
-                vm.changeColorPositionAllowed = false;
 
             }
 
@@ -580,7 +607,7 @@ THREE.EPSIHero =
 
             if (Detector.webgl) {
 
-                vm.renderer = new THREE.WebGLRenderer({ antialias: true });
+                vm.renderer = new THREE.WebGLRenderer({antialias: true});
 
             } else {
 
@@ -731,7 +758,7 @@ THREE.EPSIHero =
          * @return {Object} this for chaining purposes
          * @function
          */
-        function getUserVideo() {
+        function getUserVideo(test) {
 
             navigator.getUserMedia =
                 navigator.getUserMedia ||
@@ -746,7 +773,7 @@ THREE.EPSIHero =
             }
 
             vm.camvideo = document.getElementById('monitor');
-            navigator.getUserMedia({ video: true }, hasStream, hasNotStream);
+            navigator.getUserMedia({video: true}, hasStream, hasNotStream);
 
             return this;
 
@@ -802,9 +829,15 @@ THREE.EPSIHero =
 
                 msg = 'User denied access to use camera.';
 
-            }
+            } else if(event.code !== -100) {
 
-            console.error(msg);
+                console.error(msg);
+
+            } else {
+
+                console.log('Playing without camera.');
+
+            }
 
             vm.gameStart = true;
             vm.createBackground();
@@ -1122,9 +1155,9 @@ THREE.EPSIHero =
          */
         function play(sound) {
 
-            var bufferListTmp = (vm.bufferList || bufferList);
+            var bufferListTmp = (vm.bufferList);
 
-            if (bufferListTmp) {
+            if (vm.bufferList) {
                 var source = vm.audioContext.createBufferSource();
                 source.buffer = bufferListTmp[sound];
                 source.connect(vm.audioContext.destination);
@@ -1564,7 +1597,7 @@ THREE.EPSIHero =
         function finishedLoading(bufferList) {
 
             vm.bufferList = bufferList;
-//            vm.startBackgroundSound();
+            vm.startBackgroundSound();
 
             return this;
 
