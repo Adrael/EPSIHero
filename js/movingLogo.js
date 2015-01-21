@@ -51,14 +51,14 @@ function init3D() {
 
 function makeLogoPlanes() {
 
-    var geom = new THREE.PlaneGeometry(200,200 * (115/460),2,1);
+    var geom = new THREE.PlaneGeometry(200,200 * (200/800),2,1);
 
     for(var i =0; i<(Detector.webgl?20:3); i++)
     {
 
         material = new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( imageFolder+'logo.png' ),  opacity:(i==0)?0.9:(i>=3)?0.012:0.1, blending :THREE.AdditiveBlending, depthTest:false,transparent:true});//(1-(i/4))*0.2});
 
-        if(i==1) 	geom = new THREE.PlaneGeometry(200,200 * (115/460),1,1);
+        if(i==1) 	geom = new THREE.PlaneGeometry(200,200 * (200/800),1,1);
 
         var logo = new THREE.Mesh(geom, material);
         logo.position.z=(i>=3)? (i-2)*10 : i*-60;
@@ -74,7 +74,7 @@ function makeLogoPlanes() {
 function makeGradPlane() {
 
     var geom = new THREE.PlaneGeometry(350,200,1,1);
-    var gradPlane = new THREE.Mesh(geom, new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( imageFolder+'grad6.jpg' ),blending :THREE.AdditiveBlending, depthTest:false,transparent:true}));
+    var gradPlane = new THREE.Mesh(geom, new THREE.MeshBasicMaterial( {map: THREE.ImageUtils.loadTexture( imageFolder+'degrade.jpg' ),blending :THREE.AdditiveBlending, depthTest:false,transparent:true}));
 
     gradPlane.scale.x=1.5;
     scene.add( gradPlane );
@@ -106,8 +106,6 @@ function setupRenderer() {
     var canvas = renderer.domElement;
 
     canvas.style.background = "#020003";
-
-    var canvas = renderer.domElement;
 }
 
 function loop() {
